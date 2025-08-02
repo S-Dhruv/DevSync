@@ -73,7 +73,7 @@ const Home = () => {
               <h1 className="text-5xl md:text-6xl font-extrabold text-white">
                 <span className="text-purple-400">Dev</span>Sync
                 <span className="text-gray-200 text-2xl block mt-2 font-light">
-                  Sync in with your peers
+                  – Sync in with your peers
                 </span>
               </h1>
             </div>

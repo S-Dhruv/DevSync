@@ -1,109 +1,81 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { debounce } from "lodash";
 import { Editor } from "@monaco-editor/react";
+import { executeCode } from "../assets/api";
+import { io } from "socket.io-client";
+import { useNavigate } from "react-router-dom";
+import { RotateCcw, Eye } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom";
-import {
-  RotateCcw,
-  Play,
-  ChevronLeft,
-  ChevronRight,
-  Terminal,
-  BookOpen,
-  Code,
-} from "lucide-react";
-import { io } from "socket.io-client";
-import { executeCode } from "../assets/api";
-// --- API and Socket Connections ---
-// Assuming executeCode is in this path, otherwise, it needs to be created.
-// For demonstration, a mock function is used if the import fails.
-const runCode = async () => {
-  const sourceCode = editorRef.current?.getValue().trim();
-  if (!sourceCode) {
-    toast.warn("Code editor is empty!");
-    return;
-  }
-
-  setOutput("Running..."); // Show loading state
-
-  try {
-    const { run: result } = await executeCode(sourceCode);
-    setOutput(result?.output || "No output returned.");
-  } catch (error) {
-    console.error("Code execution error:", error);
-    setOutput("Execution failed. Please try again.");
-  }
-};
-
-// const socket = io.connect("https://codingassistant.onrender.com");
-const socket = io.connect("http://localhost:5000");
-// --- Main Component ---
+const socket = io.connect("https://codingassistant.onrender.com");
+// const  socket = io.connect("https://codingassistant.onrender.com");
 const CodeCollab = () => {
   const nav = useNavigate();
-  const editorRef = useRef(null);
   const [value, setValue] = useState("");
   const [output, setOutput] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("java"); 
-  const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState([]);
   const [leave, setLeave] = useState(false);
-
-  const roomCode = localStorage.getItem("roomCode");
+  const editorRef = useRef();
+  const code = localStorage.getItem("roomCode");
   const client = localStorage.getItem("userId");
 
   const leaveRoom = () => {
-    socket.emit("leave-room", { code: roomCode, client });
+    socket.emit("leave-room", { code, client });
     localStorage.removeItem("roomCode");
     localStorage.removeItem("userId");
-    setLeave(true);
+    console.log(`${client} left room ${code}`);
+    setLeave(!localStorage.getItem("leave"));
+    localStorage.removeItem("leave");
   };
-
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-
-    if (!roomCode || !client) {
-      toast.error("You are not in a collaboration room. Redirecting...");
-      setTimeout(() => nav("/"), 2000);
+    window.scrollTo({
+      top: 150,
+      behavior: "smooth",
+    });
+  }, []);
+  useEffect(() => {
+    setLeave(localStorage.getItem("leave"));
+    if (!code || !client) {
+      toast.error("Please enter a room");
+      setTimeout(() => {
+        nav("/");
+      }, 2000);
       return;
     }
-
     const dummyQuestions = [
       {
         title: "Two Sum",
         description:
-          "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
+          "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice. You can return the answer in any order.",
         example: {
-          input: "nums = [2, 7, 11, 15], target = 9",
-          output: "[0, 1]",
-          explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
+          input: "nums = [2,7,11,15], target = 9",
+          output: "[0,1]",
+          explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]",
         },
       },
       {
         title: "Reverse a Linked List",
-        description:
-          "Given the `head` of a singly linked list, reverse the list, and return the reversed list.",
+        description: "Reverse a singly linked list.",
         example: {
-          input: "head = [1,2,3,4,5]",
-          output: "[5,4,3,2,1]",
-          explanation: "The list is reversed node by node.",
+          input: "1->2->3->4->5->NULL",
+          output: "5->4->3->2->1->NULL",
+          explanation: "Reverse the direction of all pointers",
         },
       },
       {
         title: "Valid Parentheses",
         description:
-          "Given a string `s` containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+          "Check if a string containing just the characters '(', ')', '{', '}', '[' and ']' is valid.",
         example: {
-          input: "s = '()[]{}'",
+          input: "s = '()'",
           output: "true",
-          explanation: "All brackets are matched and closed properly.",
+          explanation: "The brackets match and are properly closed",
         },
       },
     ];
     setQuestions(dummyQuestions);
-
-    socket.emit("join-room", { roomCode, client });
+    socket.emit("join-room", { roomCode: code, client });
 
     socket.on("editor", (change) => {
       if (change !== value && editorRef.current?.getValue() !== change) {
@@ -112,30 +84,33 @@ const CodeCollab = () => {
     });
 
     socket.on("leave-room", ({ code, client }) => {
-      toast.info(`${client} left room ${code}`);
+      localStorage.removeItem("roomCode");
+      localStorage.removeItem("userId");
+      console.log(`${client} left room ${code}`);
     });
 
     return () => {
       socket.off("editor");
       socket.off("leave-room");
     };
-  }, [value, roomCode, client, nav]);
+  }, [value, code]);
 
   const onMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
   };
-
   const handleEditor = useCallback(
-    debounce((newValue) => {
-      socket.emit("editor", { change: newValue, code: roomCode });
-    }, 500),
-    [roomCode]
+    debounce((value) => {
+      setValue(value);
+      socket.emit("editor", { change: value, code });
+    }, 500), // Adjust debounce delay as needed
+    [code]
   );
-
   useEffect(() => {
-    return () => handleEditor.cancel();
-  }, [handleEditor]);
+    return () => {
+      handleEditor.cancel();
+    };
+  }, []);
 
   const runCode = async () => {
     const sourceCode = editorRef.current?.getValue().trim();
@@ -143,172 +118,144 @@ const CodeCollab = () => {
       toast.warn("Code editor is empty!");
       return;
     }
-    setIsLoading(true);
-    setOutput("Running code...");
+
+    setOutput("Running..."); // Show loading state
+
     try {
       const { run: result } = await executeCode(sourceCode);
       setOutput(result?.output || "No output returned.");
     } catch (error) {
       console.error("Code execution error:", error);
       setOutput("Execution failed. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const resetCode = () => {
-    const resetValue = `// Code reset at ${new Date().toLocaleTimeString()}`;
-    setValue(resetValue);
-    socket.emit("editor", { change: resetValue, code: roomCode });
+  const nextQuestion = () => {
+    setCurrentQuestionIndex((prevIndex) =>
+      prevIndex + 1 < questions.length ? prevIndex + 1 : 0
+    );
   };
 
-  const nextQuestion = () =>
-    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
-  const previousQuestion = () =>
-    setCurrentQuestionIndex(
-      (prev) => (prev - 1 + questions.length) % questions.length
+  const previousQuestion = () => {
+    setCurrentQuestionIndex((prevIndex) =>
+      prevIndex === 0 ? questions.length - 1 : prevIndex - 1
     );
+  };
 
   const currentQuestion = questions[currentQuestionIndex];
 
+  // if (leave) {
+  //   return (
+  //     <div className="min-h-screen bg-[#1a1a1a] text-white flex items-center justify-center">
+  //       <div className="text-center">
+  //         <h2 className="text-2xl font-bold mb-4">You've left the room</h2>
+  //         <button
+  //           onClick={() => nav("/home")}
+  //           className="px-6 py-2 bg-[#3b82f6] rounded-lg hover:bg-[#2563eb] transition duration-200"
+  //         >
+  //           Return Home
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   return (
-    <div className="bg-slate-900 text-white min-h-screen font-sans">
-      <ToastContainer theme="dark" position="top-right" />
-      <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen">
-        {/* Left Panel: Problem Description */}
-        <div className="lg:w-[35%] bg-slate-800/50 border border-slate-700 rounded-xl flex flex-col p-6 shadow-lg">
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
-            <h2 className="text-xl font-bold text-purple-400 flex items-center gap-2">
-              <BookOpen size={20} /> Problem Description
-            </h2>
+    <div className="min-h-screen bg-[#1a1a1a] text-white p-4">
+      <div className="flex gap-4 h-[calc(100vh-2rem)]">
+        {/* Problem Description Panel */}
+        <div className="w-[400px] bg-[#2a2a2a] rounded-lg p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold">Problem Description</h2>
             <div className="flex gap-2">
               <button
                 onClick={previousQuestion}
-                className="p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition-colors"
-                title="Previous Question"
+                className="px-4 py-2 bg-[#3b82f6] rounded-lg hover:bg-[#2563eb] transition"
               >
-                <ChevronLeft size={18} />
+                Previous
               </button>
               <button
                 onClick={nextQuestion}
-                className="p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition-colors"
-                title="Next Question"
+                className="px-4 py-2 bg-[#3b82f6] rounded-lg hover:bg-[#2563eb] transition"
               >
-                <ChevronRight size={18} />
+                Next
               </button>
             </div>
           </div>
-          {currentQuestion ? (
-            <div className="space-y-4 overflow-y-auto flex-grow pr-2">
-              <h3 className="text-xl font-semibold text-white">
-                {currentQuestion.title}
-              </h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {currentQuestion.description}
-              </p>
-              <div className="mt-4">
-                <h4 className="font-semibold text-slate-300 mb-2">Example:</h4>
-                <div className="bg-slate-900/70 rounded-lg p-4 space-y-2 text-sm font-mono border border-slate-700">
-                  <p>
-                    <span className="text-cyan-400">Input:</span>{" "}
-                    {currentQuestion.example.input}
-                  </p>
-                  <p>
-                    <span className="text-cyan-400">Output:</span>{" "}
-                    {currentQuestion.example.output}
-                  </p>
-                  <p>
-                    <span className="text-slate-500">Explanation:</span>{" "}
-                    {currentQuestion.example.explanation}
-                  </p>
-                </div>
+
+          <div className="space-y-4 flex-grow overflow-y-auto">
+            <h3 className="text-xl font-semibold">{currentQuestion?.title}</h3>
+            <p className="text-[#93a3b8]">{currentQuestion?.description}</p>
+
+            <div className="mt-6">
+              <h4 className="font-semibold mb-2">Example:</h4>
+              <div className="bg-[#1a1a1a] rounded-lg p-4 space-y-2">
+                <p className="text-[#93a3b8]">
+                  Input: {currentQuestion?.example?.input}
+                </p>
+                <p className="text-[#93a3b8]">
+                  Output: {currentQuestion?.example?.output}
+                </p>
+                <p className="text-[#93a3b8]">
+                  Explanation: {currentQuestion?.example?.explanation}
+                </p>
               </div>
             </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-slate-500 animate-pulse">
-              Loading Problem...
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Right Panel: Editor and Console */}
-        <div className="lg:w-[65%] flex flex-col gap-4">
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex justify-between items-center shadow-lg">
+        {/* Code Editor Panel */}
+        <div className="flex-1 flex flex-col">
+          <div className="bg-[#2a2a2a] rounded-lg p-4 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <Code
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="bg-slate-700 text-white pl-9 pr-3 py-2 text-sm rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
-                >
-                  <option value="java">Java</option>
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="cpp">C++</option>
-                </select>
-              </div>
-              <button
-                onClick={resetCode}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
-                title="Reset Code"
+              <select
+                className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg border border-[#404040] focus:outline-none focus:border-[#3b82f6]"
+                defaultValue="javascript"
               >
-                <RotateCcw size={16} />
+                <option value="java">Java</option>
+              </select>
+              <button
+                onClick={runCode}
+                className="px-6 py-2 bg-[#2ea043] text-white rounded-lg hover:bg-[#2c974b] transition flex items-center gap-2"
+              >
+                Run Code
               </button>
             </div>
-            <button
-              onClick={runCode}
-              disabled={isLoading}
-              className="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2 font-semibold text-sm disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-wait transform hover:scale-105"
-            >
-              <Play size={16} />
-              {isLoading ? "Running..." : "Run Code"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-[#93a3b8] hover:text-white transition">
+                <RotateCcw className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-[#93a3b8] hover:text-white transition">
+                <Eye className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex-grow bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-inner">
+          <div className="flex-1 bg-[#2a2a2a] rounded-lg overflow-hidden">
             <Editor
               height="100%"
               theme="vs-dark"
-              language={language}
+              defaultLanguage="java"
               value={value}
+              onChange={handleEditor}
               onMount={onMount}
-              onChange={(newValue) => {
-                setValue(newValue);
-                handleEditor(newValue);
-              }}
               options={{
                 fontSize: 14,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                automaticLayout: true,
-                wordWrap: "on",
-                padding: { top: 20, bottom: 20 },
                 lineNumbers: "on",
                 roundedSelection: false,
+                padding: { top: 16, bottom: 16 },
+                automaticLayout: true,
               }}
             />
           </div>
 
-          <div className="h-48 bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
-            <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
-              <Terminal size={16} /> Console
-            </h3>
-            <div className="font-mono text-sm text-slate-400 whitespace-pre-wrap overflow-y-auto flex-grow pt-2 pr-2">
-              {output ? (
-                <span
-                  className={
-                    output.startsWith("Error")
-                      ? "text-red-400"
-                      : "text-green-400"
-                  }
-                >{`> ${output}`}</span>
-              ) : (
-                <span className="text-slate-600">{`> Output will appear here...`}</span>
-              )}
+          {/* Console Output */}
+          <div className="h-[200px] bg-[#2a2a2a] rounded-lg mt-4 p-4">
+            <h3 className="text-lg font-semibold mb-2">Console Output:</h3>
+            <div className="font-mono text-[#93a3b8] whitespace-pre-wrap overflow-y-auto h-[calc(100%-2rem)]">
+              {output || "// Output will appear here after running the code"}
             </div>
           </div>
         </div>
