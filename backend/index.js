@@ -12,6 +12,7 @@ import nodemailer from "nodemailer";
 import { generateQuiz } from "./ai-quiz.js";
 import { jsonrepair } from "jsonrepair";
 import chatHistory from "./models/chatRoom.js";
+import blogRouter from "./routes/blogRoutes.js";
 
 dotenv.config();
 
@@ -41,6 +42,8 @@ let roomHistory = {};
 //Routes
 app.use("/", authRoutes);
 app.use("/", roomRoutes);
+app.use("/blog", blogRouter);
+
 io.on("connection", (socket) => {
   console.log("Client connected with id:", socket.id);
 
