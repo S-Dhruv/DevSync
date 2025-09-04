@@ -4,7 +4,7 @@ import { ChatGroq } from "@langchain/groq";
 import * as dotenv from "dotenv";
 dotenv.config();
 const model = new ChatGroq({
-  model: "mistral-saba-24b",
+  model: "openai/gpt-oss-20b",
   apiKey: process.env.ApiKey,
 });
 const quizgen = new PromptTemplate({
