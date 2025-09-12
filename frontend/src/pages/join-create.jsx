@@ -182,7 +182,10 @@ const JoinCreate = () => {
     try {
       const res = await axios.post(
         "https://codingassistant.onrender.com/send-code",
-        { roomCode, email }
+        {
+          roomCode,
+          email,
+        }
       );
       toast.success(res.data.message || "Email sent successfully!");
     } catch {

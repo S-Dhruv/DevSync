@@ -15,9 +15,7 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { executeCode } from "../assets/api";
-// --- API and Socket Connections ---
-// Assuming executeCode is in this path, otherwise, it needs to be created.
-// For demonstration, a mock function is used if the import fails.
+
 const runCode = async () => {
   const sourceCode = editorRef.current?.getValue().trim();
   if (!sourceCode) {
@@ -37,7 +35,7 @@ const runCode = async () => {
 };
 
 // const socket = io.connect("https://codingassistant.onrender.com");
-const socket = io.connect("http://localhost:5000");
+const socket = io.connect("https://codingassistant.onrender.com");
 // --- Main Component ---
 const CodeCollab = () => {
   const nav = useNavigate();
@@ -45,7 +43,7 @@ const CodeCollab = () => {
   const [value, setValue] = useState("");
   const [output, setOutput] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("java"); 
+  const [language, setLanguage] = useState("java");
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [leave, setLeave] = useState(false);

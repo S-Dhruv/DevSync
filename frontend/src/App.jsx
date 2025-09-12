@@ -21,13 +21,14 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import VideoCall from "./pages/VideoCall";
+import Board from "./pages/Board";
 import Dashboard from "./pages/Dashboard";
 function App() {
   const [isLogin, setIsLogin] = useState(
     localStorage.getItem("isLogin") === "true"
   );
 
-     useEffect(() => {
+  useEffect(() => {
     const handleStorageChange = () => {
       setIsLogin(localStorage.getItem("isLogin") === "true");
     };
@@ -90,6 +91,14 @@ function App() {
               }
             />
             <Route path="*" element={<NotFound />} />
+            <Route
+              path="/editor"
+              element={
+                <ProtectedRoute>
+                  <Board />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
           <ChatBot />
         </main>
