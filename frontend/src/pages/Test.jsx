@@ -3,8 +3,11 @@ import { RoomEntry } from "../components/Room-entry";
 import { QuizUpload } from "../components/Quiz-upload";
 import { QuizRenderer } from "../components/Quiz-render";
 import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
-// --- SVG Icons for a polished look ---
+// FIX: Fix take quiz when no quiz is there
+// FIX: Error saving result after quiz
+ 
 const UploadIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -79,23 +82,22 @@ const ExitIcon = () => (
 );
 
 export default function Test() {
-  // --- All your existing state and logic remains untouched ---
   const nav = useNavigate();
   const [roomCode, setRoomCode] = useState(localStorage.getItem("roomCode"));
   const [quizData, setQuizData] = useState(null);
-  const [userId, setUserId] = useState(localStorage.getItem("userId"));
+  const token = localStorage.getItem("token");
+  const [userId, setUserId] = useState(jwtDecode(token).userId);
   const [isHost, setIsHost] = useState(
-    localStorage.getItem("role") === "admin"
+   jwtDecode(token).role === "admin"
   );
   const [quizSubject, setQuizSubject] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("easy");
-
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("default");
 
   useEffect(() => {
     if (roomCode && userId) {
-      setIsHost(localStorage.getItem("role") === "admin");
+      setIsHost(jwtDecode(token).role === "admin");
     }
     setLoading(false);
     window.scrollTo({
@@ -106,10 +108,10 @@ export default function Test() {
 
   const handleRoomJoin = (code, id) => {
     localStorage.setItem("roomCode", code);
-    localStorage.setItem("userId", id);
+    // localStorage.setItem("userId", id);
     setRoomCode(code);
     setUserId(id);
-    setIsHost(localStorage.getItem("role") === "admin");
+    setIsHost(jwtDecode(token).role === "admin");
     setView("default");
   };
 
@@ -120,8 +122,8 @@ export default function Test() {
 
   const handleExitRoom = () => {
     localStorage.removeItem("roomCode");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("role");
+    // localStorage.removeItem("userId");
+    // localStorage.removeItem("role");
     setRoomCode(null);
     setUserId(null);
     setIsHost(false);
@@ -137,18 +139,15 @@ export default function Test() {
         return;
       }
 
-      const response = await fetch(
-        "https://codingassistant.onrender.com/api/init-quiz",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subjects: [quizSubject],
-            difficulty: quizDifficulty,
-            roomCode,
-          }),
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/init-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subjects: [quizSubject],
+          difficulty: quizDifficulty,
+          roomCode,
+        }),
+      });
 
       const data = await response.json();
       if (response.ok) {

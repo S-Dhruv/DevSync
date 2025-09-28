@@ -21,7 +21,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLogged, setIsLogged] = useState(
-    localStorage.getItem("isLogin") === "true"
+    localStorage.getItem("token") !== null
   );
 
   const toggleSidebar = () => setIsOpen(!isOpen);
@@ -59,7 +59,6 @@ const Sidebar = () => {
         }}
         className="fixed top-0 left-0 h-screen bg-[#1e1e1e] text-white z-40 flex flex-col shadow-lg"
       >
-        {/* Sidebar Toggle */}
         <div className="flex justify-center items-center p-2 border-b border-gray-800">
           <button
             onClick={toggleSidebar}
@@ -73,7 +72,6 @@ const Sidebar = () => {
           </button>
         </div>
 
-        {/* Navigation Menu */}
         <div className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-6">
             {navItems.map((item, index) => (
@@ -94,16 +92,13 @@ const Sidebar = () => {
                   title={!isOpen ? item.name : ""}
                 >
                   <span className="text-xl">{item.icon}</span>
-                  {isOpen && (
-                    <span className="ml-3 text-sm">{item.name}</span>
-                  )}
+                  {isOpen && <span className="ml-3 text-sm">{item.name}</span>}
                 </a>
               </li>
             ))}
           </ul>
         </div>
 
-        {/* Profile and Logout */}
         <div className="p-4 border-t border-gray-800 flex flex-col gap-3">
           <button
             onClick={() => navigate("/profile")}
@@ -135,7 +130,6 @@ const Sidebar = () => {
         </div>
       </motion.div>
 
-      {/* Main Content Padding */}
       <div
         className="min-h-screen transition-all duration-300"
         style={{ paddingLeft: isOpen ? "200px" : "60px" }}
@@ -149,7 +143,6 @@ const Sidebar = () => {
             transition={{ duration: 0.3 }}
             className="w-full h-full"
           >
-            {/* Routed page content will appear here */}
           </motion.div>
         </AnimatePresence>
       </div>

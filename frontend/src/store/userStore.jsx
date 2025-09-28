@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import axios from "axios";
-import { nanoid } from "nanoid";
-const BASE = "https://codingassistant.onrender.com/";
-// const BASE = "https://codingassistant.onrender.com/";
+
+const BASE = "http://localhost:5000/";
+
 export const userStore = create((set) => ({
   user: null,
   setUser: (user) => set({ user }),
@@ -25,10 +25,10 @@ export const userStore = create((set) => ({
     }
     try {
       const response = await axios.post(`${BASE}login`, Udata);
-      console.log(response);
+      // console.log(response);
       return response;
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       return { message: "Error occurred while logging in" };
     }
   },

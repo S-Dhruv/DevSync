@@ -15,28 +15,10 @@ import {
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { executeCode } from "../assets/api";
+import { jwtDecode } from "jwt-decode";
 
-const runCode = async () => {
-  const sourceCode = editorRef.current?.getValue().trim();
-  if (!sourceCode) {
-    toast.warn("Code editor is empty!");
-    return;
-  }
-
-  setOutput("Running..."); // Show loading state
-
-  try {
-    const { run: result } = await executeCode(sourceCode);
-    setOutput(result?.output || "No output returned.");
-  } catch (error) {
-    console.error("Code execution error:", error);
-    setOutput("Execution failed. Please try again.");
-  }
-};
-
-// const socket = io.connect("https://codingassistant.onrender.com");
-const socket = io.connect("https://codingassistant.onrender.com");
-// --- Main Component ---
+// const socket = io.connect("http://localhost:5000");
+const socket = io.connect("http://localhost:5000");
 const CodeCollab = () => {
   const nav = useNavigate();
   const editorRef = useRef(null);
@@ -49,57 +31,69 @@ const CodeCollab = () => {
   const [leave, setLeave] = useState(false);
 
   const roomCode = localStorage.getItem("roomCode");
-  const client = localStorage.getItem("userId");
-
+  const token = localStorage.getItem("token");
+  const client = () => {
+    try {
+      const decodedPayloud = jwtDecode(token);
+      return decodedPayloud.userId;
+    } catch {
+      return null;
+    }
+  };
+  // TODO: Add leave Room button
   const leaveRoom = () => {
+    if (client === null) {
+      toast.error("Unknown Error");
+    }
     socket.emit("leave-room", { code: roomCode, client });
     localStorage.removeItem("roomCode");
-    localStorage.removeItem("userId");
     setLeave(true);
   };
 
+  const dummyQuestions = [
+    {
+      title: "Two Sum",
+      description:
+        "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
+      example: {
+        input: "nums = [2, 7, 11, 15], target = 9",
+        output: "[0, 1]",
+        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
+      },
+    },
+    {
+      title: "Reverse a Linked List",
+      description:
+        "Given the `head` of a singly linked list, reverse the list, and return the reversed list.",
+      example: {
+        input: "head = [1,2,3,4,5]",
+        output: "[5,4,3,2,1]",
+        explanation: "The list is reversed node by node.",
+      },
+    },
+    {
+      title: "Valid Parentheses",
+      description:
+        "Given a string `s` containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+      example: {
+        input: "s = '()[]{}'",
+        output: "true",
+        explanation: "All brackets are matched and closed properly.",
+      },
+    },
+  ];
+
+  useEffect(() => {
+    setQuestions(dummyQuestions);
+  }, []);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    if (!roomCode || !client) {
+    if (!roomCode || client === null) {
       toast.error("You are not in a collaboration room. Redirecting...");
       setTimeout(() => nav("/"), 2000);
       return;
     }
-
-    const dummyQuestions = [
-      {
-        title: "Two Sum",
-        description:
-          "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
-        example: {
-          input: "nums = [2, 7, 11, 15], target = 9",
-          output: "[0, 1]",
-          explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
-        },
-      },
-      {
-        title: "Reverse a Linked List",
-        description:
-          "Given the `head` of a singly linked list, reverse the list, and return the reversed list.",
-        example: {
-          input: "head = [1,2,3,4,5]",
-          output: "[5,4,3,2,1]",
-          explanation: "The list is reversed node by node.",
-        },
-      },
-      {
-        title: "Valid Parentheses",
-        description:
-          "Given a string `s` containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
-        example: {
-          input: "s = '()[]{}'",
-          output: "true",
-          explanation: "All brackets are matched and closed properly.",
-        },
-      },
-    ];
-    setQuestions(dummyQuestions);
 
     socket.emit("join-room", { roomCode, client });
 
@@ -117,7 +111,7 @@ const CodeCollab = () => {
       socket.off("editor");
       socket.off("leave-room");
     };
-  }, [value, roomCode, client, nav]);
+  }, [roomCode, client, nav]);
 
   const onMount = (editor) => {
     editorRef.current = editor;
@@ -160,8 +154,9 @@ const CodeCollab = () => {
     socket.emit("editor", { change: resetValue, code: roomCode });
   };
 
-  const nextQuestion = () =>
+  const nextQuestion = () => {
     setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
+  };
   const previousQuestion = () =>
     setCurrentQuestionIndex(
       (prev) => (prev - 1 + questions.length) % questions.length
@@ -173,7 +168,6 @@ const CodeCollab = () => {
     <div className="bg-slate-900 text-white min-h-screen font-sans">
       <ToastContainer theme="dark" position="top-right" />
       <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen">
-        {/* Left Panel: Problem Description */}
         <div className="lg:w-[35%] bg-slate-800/50 border border-slate-700 rounded-xl flex flex-col p-6 shadow-lg">
           <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
             <h2 className="text-xl font-bold text-purple-400 flex items-center gap-2">
@@ -229,7 +223,6 @@ const CodeCollab = () => {
           )}
         </div>
 
-        {/* Right Panel: Editor and Console */}
         <div className="lg:w-[65%] flex flex-col gap-4">
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex justify-between items-center shadow-lg">
             <div className="flex items-center gap-4">
@@ -244,9 +237,9 @@ const CodeCollab = () => {
                   className="bg-slate-700 text-white pl-9 pr-3 py-2 text-sm rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
                 >
                   <option value="java">Java</option>
-                  <option value="javascript">JavaScript</option>
+                  {/* <option value="javascript">JavaScript</option>
                   <option value="python">Python</option>
-                  <option value="cpp">C++</option>
+                  <option value="cpp">C++</option> */}
                 </select>
               </div>
               <button

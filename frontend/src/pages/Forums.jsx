@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-const socket = io.connect("https://codingassistant.onrender.com");
-// const  socket = io.connect("https://codingassistant.onrender.com");
+import { jwtDecode } from "jwt-decode";
+const socket = io.connect("http://localhost:5000");
+// const  socket = io.connect("http://localhost:5000");
 
 const Forums = () => {
   const [roomCode, setRoomCode] = useState(null);
@@ -21,40 +22,43 @@ const Forums = () => {
   const [chat, setChat] = useState([]);
   const [leave, setLeave] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(1);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const nav = useNavigate();
   const code = localStorage.getItem("roomCode");
-  const client = localStorage.getItem("userId");
+  const token = localStorage.getItem("token");
+
+  const client = ()=>{
+    try{
+      const decoded = jwtDecode(token);
+      return decoded.userId;
+    }
+    catch{
+      return null;
+    }
+  }
 
   useEffect(() => {
-    if (!code || !client) {
+    if (!code || client == null) {
       toast.error("Please login and join a room first");
       nav("/");
     } else {
       setRoomCode(code);
       setUser(client);
       socket.emit("join-room", { roomCode: code, userId: client });
-
-      const savedChat = localStorage.getItem(`chat_${code}`);
-      if (savedChat) {
-        setChat(JSON.parse(savedChat));
-      }
+      
+      // TODO : chat from db only
+      // const savedChat = localStorage.getItem(`chat_${code}`);
+      // if (savedChat) {
+      //   setChat(JSON.parse(savedChat));
+      // }
     }
 
-    socket.on("user-count-update", (count) => {
-      setOnlineUsers(count);
-    });
-
-    return () => {
-      socket.off("user-count-update");
-    };
   }, []);
 
   useEffect(() => {
     setLeave(localStorage.getItem("leave"));
-
+    // make db call
     const handleReceiveMessage = (payload) => {
       setChat((prev) => {
         if (
@@ -69,7 +73,7 @@ const Forums = () => {
           ...prev,
           { ...payload, timestamp: new Date().toISOString() },
         ];
-        localStorage.setItem(`chat_${roomCode}`, JSON.stringify(updatedChat));
+        // localStorage.setItem(`chat_${roomCode}`, JSON.stringify(updatedChat));
         return updatedChat;
       });
     };

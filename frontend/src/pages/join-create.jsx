@@ -16,12 +16,10 @@ import {
   Settings,
 } from "lucide-react";
 import axios from "axios";
+import {jwtDecode} from 'jwt-decode';
 
-// --- Socket.IO Connection ---
-// Ensure the server URL is correct
-const socket = io.connect("https://codingassistant.onrender.com");
+const socket = io.connect("http://localhost:5000");
 
-// --- Interactive Pomodoro Timer Component ---
 const PomodoroCircle = ({ time, duration, isRunning, onToggle }) => {
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
@@ -84,8 +82,7 @@ const JoinCreate = () => {
   const [ping, setPing] = useState("...");
   const [copied, setCopied] = useState(false);
 
-  // Pomodoro State
-  const POMODORO_DURATION = 1500; // 25 mins in seconds
+  const POMODORO_DURATION = 1500; 
   const [pomodoroTime, setPomodoroTime] = useState(POMODORO_DURATION);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -145,8 +142,6 @@ const JoinCreate = () => {
     e.preventDefault();
     if (!roomCode) return toast.error("Please enter a room code.");
     try {
-      // This logic should ideally be handled by a state management library like Zustand/Redux
-      // For now, we'll assume a successful API call
       socket.emit("join-room", {
         roomCode,
         userId: localStorage.getItem("userId"),
@@ -160,8 +155,6 @@ const JoinCreate = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    // This logic should be handled by a state management library
-    // Simulating room creation
     const newRoomCode = Math.random()
       .toString(36)
       .substring(2, 8)
@@ -180,13 +173,10 @@ const JoinCreate = () => {
     if (!email || !roomCode)
       return toast.warn("Please enter a room code and email.");
     try {
-      const res = await axios.post(
-        "https://codingassistant.onrender.com/send-code",
-        {
-          roomCode,
-          email,
-        }
-      );
+      const res = await axios.post("http://localhost:5000/send-code", {
+        roomCode,
+        email,
+      });
       toast.success(res.data.message || "Email sent successfully!");
     } catch {
       toast.error("Failed to send email.");
@@ -240,7 +230,6 @@ const JoinCreate = () => {
       <ToastContainer theme="dark" position="top-right" autoClose={3000} />
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column: Stats & Pomodoro */}
           <div className="lg:col-span-1 bg-slate-800/50 border border-slate-700 p-6 rounded-2xl flex flex-col gap-6">
             <h3 className="text-xl font-bold text-purple-400 text-center">
               📊 Room Dashboard
@@ -273,7 +262,6 @@ const JoinCreate = () => {
             </div>
           </div>
 
-          {/* Right Column: Actions */}
           <div className="lg:col-span-2 bg-slate-800/50 border border-slate-700 p-6 rounded-2xl flex flex-col justify-center">
             <h2 className="text-2xl font-bold text-center text-white mb-6">
               Join or Create a Collaboration Room
@@ -343,7 +331,6 @@ const JoinCreate = () => {
           </div>
         </div>
 
-        {/* Bottom Section: How It Works */}
         <div className="mt-8 bg-slate-800/50 border border-slate-700 rounded-2xl p-8">
           <h3 className="text-2xl font-bold text-center text-white mb-8">
             How It Works

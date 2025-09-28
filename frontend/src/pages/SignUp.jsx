@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { userStore } from "../store/userStore";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 const SignUp = () => {
   const [formData, setFormData] = useState({
     username: "",

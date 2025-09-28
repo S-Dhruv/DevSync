@@ -34,14 +34,16 @@ const connectDB = async () => {
     console.error("Error connecting to database");
   }
 };
+
 let timeOnline = {};
 let connections = {};
 let roomHistory = {};
+
 //Routes
 app.use("/", authRoutes);
 app.use("/", roomRoutes);
 io.on("connection", (socket) => {
-  console.log("Client connected with id:", socket.id);
+  // console.log("Client connected with id:", socket.id);
 
   socket.on("join-room", ({ roomCode, userId }) => {
     try {
@@ -49,7 +51,7 @@ io.on("connection", (socket) => {
 
       socket.join(roomCode);
       socket.roomCode = roomCode;
-      console.log("Join-room payload:", roomCode, userId);
+      // console.log("Join-room payload:", roomCode, userId);
 
       if (!rooms[roomCode]) rooms[roomCode] = [];
       if (!rooms[roomCode].includes(userId)) rooms[roomCode].push(userId);
@@ -78,19 +80,19 @@ io.on("connection", (socket) => {
           time: new Date().toISOString(),
         });
       }
-      console.log(1);
+      // console.log(1);
       io.to(roomCode).emit("user-joined", socket.id, connections[roomCode]);
       io.to(roomCode).emit("room-history", roomHistory[roomCode]);
       io.to(roomCode).emit("room-users", rooms[roomCode].length);
 
-      console.log(`User ${userId} joined room ${roomCode}`);
+      // console.log(`User ${userId} joined room ${roomCode}`);
     } catch (error) {
       console.error("Error in join-room:", error);
     }
   });
   socket.on("get-room-history", ({ roomCode, userId }) => {
     try {
-      console.log(`Sending room history for ${roomCode} to ${userId}`);
+      // console.log(`Sending room history for ${roomCode} to ${userId}`);
       if (roomHistory[roomCode]) {
         socket.emit("room-history", roomHistory[roomCode]); // ✅ Renamed
       } else {
@@ -154,7 +156,6 @@ io.on("connection", (socket) => {
         delete users[client];
         socket.leave(code);
 
-        // --- 🔥 Track leave in room history ---
         const now = new Date().toISOString();
         if (!roomHistory[code]) roomHistory[code] = [];
         roomHistory[code].push({

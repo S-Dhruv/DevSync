@@ -28,25 +28,24 @@ function App() {
     localStorage.getItem("isLogin") === "true"
   );
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsLogin(localStorage.getItem("isLogin") === "true");
-    };
+  // useEffect(() => {
+  //   const handleStorageChange = () => {
+  //     setIsLogin(localStorage.getItem("isLogin") === "true");
+  //   };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
+  //   window.addEventListener("storage", handleStorageChange);
+  //   return () => {
+  //     window.removeEventListener("storage", handleStorageChange);
+  //   };
+  // }, []);
 
   const ProtectedRoute = ({ children }) => {
-    return localStorage.getItem("isLogin") === "true" ? (
+    return localStorage.getItem("token") !== null ? (
       children
     ) : (
       <Navigate to="/login" replace />
     );
   };
-
   return (
     <Router>
       <ToastContainer position="top-right" autoClose={2000} />
@@ -56,7 +55,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/login" element={<Login setIsLogin={setIsLogin} />} />
+            <Route path="/login" element={<Login />} />
             <Route
               path="/collab"
               element={

@@ -1,9 +1,9 @@
 import { hash, compare } from 'bcryptjs';
-
 import pkg from "jsonwebtoken";
 const { sign } = pkg;
 import User from "../models/User.js";
 import { nanoid } from "nanoid";
+
 export async function signup(req, res) {
   const { username, email, password, role } = req.body;
   try {
@@ -49,11 +49,15 @@ export async function login(req, res) {
     }
 
     const token = sign(
-      { userId: user._id, role: user.role },
+      { userId: user._id, 
+        role: user.role,
+        name:user.username,
+        email:user.email,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
-    console.log(user.uid);
+    // console.log(user.uid);
     return res.status(200).json({
       token,
       userId: user._id,

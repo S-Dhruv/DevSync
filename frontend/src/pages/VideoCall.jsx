@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
-const SERVER_URL = "https://codingassistant.onrender.com";
+const SERVER_URL = "http://localhost:5000";
 const roomCode = localStorage.getItem("roomCode");
 const userId = localStorage.getItem("userId");
 

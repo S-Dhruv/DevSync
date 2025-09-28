@@ -5,7 +5,8 @@ import { Lock, Mail } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-const Login = ({ setIsLogin }) => {
+
+const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const nav = useNavigate();
   const { login } = userStore();
@@ -15,13 +16,8 @@ const Login = ({ setIsLogin }) => {
     const resp = await login(formData);
     console.log(resp.status);
     if (resp.status == 200) {
-      setIsLogin(true);
-      localStorage.setItem("isLogin", "true");
-      console.log(formData.email, resp.token, resp.id, resp.role);
-      localStorage.setItem("email", formData.email);
+      // setIsLogin(true);
       localStorage.setItem("token", resp.data.token);
-      localStorage.setItem("userId", resp.data.id);
-      localStorage.setItem("role", resp.data.role);
       toast.success(resp.data.message);
       setTimeout(() => {
         nav("/");
