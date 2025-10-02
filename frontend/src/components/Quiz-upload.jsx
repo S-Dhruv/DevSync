@@ -121,7 +121,7 @@ export function QuizUpload({ onQuizUpload, roomCode }) {
       const data = JSON.parse(jsonData);
       validateQuizData(data);
       const response = await fetch(
-        `https://codingassistant.onrender.com//api/save-quiz`,
+        `https://codingassistant.onrender.com/api/save-quiz`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

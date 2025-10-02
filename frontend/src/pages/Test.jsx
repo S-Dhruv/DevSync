@@ -138,7 +138,7 @@ export default function Test() {
       }
 
       const response = await fetch(
-        "https://codingassistant.onrender.com//api/init-quiz",
+        "https://codingassistant.onrender.com/api/init-quiz",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

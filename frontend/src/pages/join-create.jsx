@@ -175,7 +175,7 @@ const JoinCreate = () => {
       return toast.warn("Please enter a room code and email.");
     try {
       const res = await axios.post(
-        "https://codingassistant.onrender.com//send-code",
+        "https://codingassistant.onrender.com/send-code",
         {
           roomCode,
           email,

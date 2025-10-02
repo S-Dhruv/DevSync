@@ -40,7 +40,7 @@ const Forums = () => {
   const fetchMessages = async (roomCode) => {
     try {
       const response = await axios.post(
-        "https://codingassistant.onrender.com//getMessage",
+        "https://codingassistant.onrender.com/getMessage",
         {
           roomCode,
         }
