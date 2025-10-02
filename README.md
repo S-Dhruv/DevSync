@@ -2,6 +2,13 @@
 
 **DevSync** is a MERN stack-based **real-time collaboration platform** designed to streamline teamwork among developers. It offers **live code sharing**, **group chat**, **voice/video calling**, and **AI-generated quizzes**
 
+To implement:
+1. Docker based test case validatior for given code
+2. AI code reviewer
+3. Version Control System
+
+Currently work in progress!
+
 ---
 
 ## 🌟 Features
