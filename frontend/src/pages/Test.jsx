@@ -7,7 +7,7 @@ import { jwtDecode } from "jwt-decode";
 
 // FIX: Fix take quiz when no quiz is there
 // FIX: Error saving result after quiz
- 
+
 const UploadIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -87,9 +87,7 @@ export default function Test() {
   const [quizData, setQuizData] = useState(null);
   const token = localStorage.getItem("token");
   const [userId, setUserId] = useState(jwtDecode(token).userId);
-  const [isHost, setIsHost] = useState(
-   jwtDecode(token).role === "admin"
-  );
+  const [isHost, setIsHost] = useState(jwtDecode(token).role === "admin");
   const [quizSubject, setQuizSubject] = useState("");
   const [quizDifficulty, setQuizDifficulty] = useState("easy");
   const [loading, setLoading] = useState(true);
@@ -139,15 +137,18 @@ export default function Test() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/init-quiz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subjects: [quizSubject],
-          difficulty: quizDifficulty,
-          roomCode,
-        }),
-      });
+      const response = await fetch(
+        "https://codingassistant.onrender.com//api/init-quiz",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subjects: [quizSubject],
+            difficulty: quizDifficulty,
+            roomCode,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (response.ok) {

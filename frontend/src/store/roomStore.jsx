@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { nanoid } from "nanoid";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-const BASE = "http://localhost:5000/";
-// const BASE = "http://localhost:5000/"
+const BASE = "https://codingassistant.onrender.com//";
+// const BASE = "https://codingassistant.onrender.com//"
 
 const roomStore = create((set) => ({
   room: null,
@@ -14,19 +14,17 @@ const roomStore = create((set) => ({
     set({ roomCode: code });
     return code;
   },
-  userId : ()=>{
-      try{
-        const token = localStorage.getItem("token");
-        return jwtDecode(token).userId;
-      }
-      catch{
-        return null;
-      }
-    }, 
+  userId: () => {
+    try {
+      const token = localStorage.getItem("token");
+      return jwtDecode(token).userId;
+    } catch {
+      return null;
+    }
+  },
   join: async (roomCode) => {
     if (!roomCode) return { message: "Enter a room Code" };
 
-    
     try {
       if (userId === null) {
         return { success: false, message: "User not found" };

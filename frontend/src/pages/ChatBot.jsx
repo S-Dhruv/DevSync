@@ -25,9 +25,12 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/prompt", {
-        prompt: input,
-      });
+      const response = await axios.post(
+        "https://codingassistant.onrender.com//prompt",
+        {
+          prompt: input,
+        }
+      );
       setMessages((prev) => [
         ...prev,
         { text: response.data.reply, sender: "bot" },

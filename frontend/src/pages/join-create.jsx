@@ -18,7 +18,7 @@ import {
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
-const socket = io.connect("http://localhost:5000");
+const socket = io.connect("https://codingassistant.onrender.com/");
 
 const PomodoroCircle = ({ time, duration, isRunning, onToggle }) => {
   const radius = 50;
@@ -174,10 +174,13 @@ const JoinCreate = () => {
     if (!email || !roomCode)
       return toast.warn("Please enter a room code and email.");
     try {
-      const res = await axios.post("http://localhost:5000/send-code", {
-        roomCode,
-        email,
-      });
+      const res = await axios.post(
+        "https://codingassistant.onrender.com//send-code",
+        {
+          roomCode,
+          email,
+        }
+      );
       toast.success(res.data.message || "Email sent successfully!");
     } catch {
       toast.error("Failed to send email.");

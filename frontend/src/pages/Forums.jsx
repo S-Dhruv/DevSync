@@ -12,7 +12,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { jwtDecode } from "jwt-decode";
-const socket = io.connect("http://localhost:5000");
+const socket = io.connect("https://codingassistant.onrender.com/");
 import axios from "axios";
 
 const client = (token) => {
@@ -39,9 +39,12 @@ const Forums = () => {
   const token = localStorage.getItem("token");
   const fetchMessages = async (roomCode) => {
     try {
-      const response = await axios.post("http://localhost:5000/getMessage", {
-        roomCode,
-      });
+      const response = await axios.post(
+        "https://codingassistant.onrender.com//getMessage",
+        {
+          roomCode,
+        }
+      );
       setChat(response.data);
       if (response.data.length > 0) {
         toast.success(`Loaded ${response.data.length} historical messages.`);
