@@ -11,7 +11,7 @@ const model = genAI.getGenerativeModel({
 });
 
 const generationConfig = {
-  temperature: 0.7,
+  temperature: 0.7, 
   topP: 0.9,
   topK: 40,
   maxOutputTokens: 500,
@@ -23,10 +23,11 @@ async function run(prompt) {
     const chatSession = model.startChat({ generationConfig, history: [] });
     const result = await chatSession.sendMessage(prompt);
 
-    // Extract response text
+    // Extract response text 
     const responseText = result.response.text();
 
-    // Handle file output if present
+    // Handle file output if present   
+    
     const candidates = result.response.candidates;
     for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
       for (let partIndex = 0; partIndex < candidates[candidateIndex].content.parts.length; partIndex++) {

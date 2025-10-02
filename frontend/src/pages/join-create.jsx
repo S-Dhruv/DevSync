@@ -16,7 +16,7 @@ import {
   Settings,
 } from "lucide-react";
 import axios from "axios";
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from "jwt-decode";
 
 const socket = io.connect("http://localhost:5000");
 
@@ -82,7 +82,7 @@ const JoinCreate = () => {
   const [ping, setPing] = useState("...");
   const [copied, setCopied] = useState(false);
 
-  const POMODORO_DURATION = 1500; 
+  const POMODORO_DURATION = 1500;
   const [pomodoroTime, setPomodoroTime] = useState(POMODORO_DURATION);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -101,7 +101,7 @@ const JoinCreate = () => {
     const code = localStorage.getItem("roomCode");
     if (code) setRoomCode(code);
 
-    socket.on("room-users", (count) => setUserCount(count));
+    // socket.on("room-users", (count) => setUserCount(count));
 
     const pingInterval = setInterval(() => {
       const start = Date.now();
@@ -118,7 +118,7 @@ const JoinCreate = () => {
     return () => {
       clearInterval(pingInterval);
       clearInterval(funInterval);
-      socket.off("room-users");
+      // socket.off("room-users");
     };
   }, [funFacts.length]);
 
@@ -144,7 +144,7 @@ const JoinCreate = () => {
     try {
       socket.emit("join-room", {
         roomCode,
-        userId: localStorage.getItem("userId"),
+        userId: jwtDecode(localStorage.getItem("token")).userId,
       });
       localStorage.setItem("roomCode", roomCode);
       toast.success(`Successfully joined room: ${roomCode}`);
@@ -163,8 +163,9 @@ const JoinCreate = () => {
     localStorage.setItem("roomCode", newRoomCode);
     socket.emit("join-room", {
       roomCode: newRoomCode,
-      userId: localStorage.getItem("userId"),
+      userId: jwtDecode(localStorage.getItem("token")).userId,
     });
+    // add a check
     toast.success(`Created and joined new room: ${newRoomCode}`);
     handleCopy(newRoomCode);
   };

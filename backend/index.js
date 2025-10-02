@@ -7,11 +7,11 @@ import { createServer } from "http";
 import authRoutes from "./routes/authRoutes.js";
 import { rooms, users } from "./sharedState/sharedState.js";
 import roomRoutes from "./routes/roomRoutes.js";
-import Quiz from "./models/Quiz.js"; // Fixed casing to match actual file
 import nodemailer from "nodemailer";
-import { generateQuiz } from "./ai-quiz.js";
-import { jsonrepair } from "jsonrepair";
-
+import quizRoutes from "./routes/quizRoutes.js";
+import Room from "./models/Room.js";
+import Messages from "./models/Messages.js";
+import User from "./models/User.js";
 dotenv.config();
 
 const app = express();
@@ -35,71 +35,73 @@ const connectDB = async () => {
   }
 };
 
-let timeOnline = {};
+// let timeOnline = {};
 let connections = {};
-let roomHistory = {};
+// let roomHistory = {};
 
 //Routes
 app.use("/", authRoutes);
 app.use("/", roomRoutes);
+app.use("/", quizRoutes);
+app.post("/getMessage", async (req, res) => {
+  const { roomCode } = req.body;
+  try {
+    const messageDoc = await Messages.findOne({ room: roomCode });
+    const messages = messageDoc ? messageDoc.message : [];
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).json({ error: "Failed to fetch messages." });
+  }
+});
+
 io.on("connection", (socket) => {
   // console.log("Client connected with id:", socket.id);
 
-  socket.on("join-room", ({ roomCode, userId }) => {
+  socket.on("join-room", async ({ roomCode, userId }) => {
     try {
       socket.userId = userId;
-
       socket.join(roomCode);
       socket.roomCode = roomCode;
-      // console.log("Join-room payload:", roomCode, userId);
 
       if (!rooms[roomCode]) rooms[roomCode] = [];
       if (!rooms[roomCode].includes(userId)) rooms[roomCode].push(userId);
       users[userId] = roomCode;
+
+      const roomSearch = await Room.find({ roomId: roomCode });
+      if (!roomSearch) {
+        await Room.create({
+          roomId: roomCode,
+          users: [{ userId }],
+        });
+      } else {
+        const userExists = (roomSearch.users || []).some(
+          (u) => u.userId === userId
+        );
+        if (!userExists) {
+          await Room.updateOne(
+            { roomId: roomCode },
+            { $push: { users: { userId } } }
+          );
+        }
+      }
+
+      // console.log(userAddition);
+      const messageDoc = await Messages.findOne({ room: roomCode });
+      if (messageDoc && messageDoc.message) {
+        socket.emit("room-messages", messageDoc.message);
+       
+      }
 
       if (!connections[roomCode]) connections[roomCode] = [];
       if (!connections[roomCode].includes(socket.id)) {
         connections[roomCode].push(socket.id);
       }
 
-      timeOnline[socket.id] = new Date();
-
-      if (!roomHistory[roomCode]) {
-        roomHistory[roomCode] = [];
-      }
-      const lastEvent = roomHistory[roomCode].slice(-1)[0];
-      if (
-        !lastEvent ||
-        lastEvent.userId !== userId ||
-        lastEvent.action !== "join"
-      ) {
-        roomHistory[roomCode].push({
-          userId,
-          roomCode, 
-          action: "join",
-          time: new Date().toISOString(),
-        });
-      }
-      // console.log(1);
       io.to(roomCode).emit("user-joined", socket.id, connections[roomCode]);
-      io.to(roomCode).emit("room-history", roomHistory[roomCode]);
-      io.to(roomCode).emit("room-users", rooms[roomCode].length);
-
       // console.log(`User ${userId} joined room ${roomCode}`);
     } catch (error) {
       console.error("Error in join-room:", error);
-    }
-  });
-  socket.on("get-room-history", ({ roomCode, userId }) => {
-    try {
-      // console.log(`Sending room history for ${roomCode} to ${userId}`);
-      if (roomHistory[roomCode]) {
-        socket.emit("room-history", roomHistory[roomCode]); // ✅ Renamed
-      } else {
-        socket.emit("room-history", []);
-      }
-    } catch (err) {
-      console.error("Error sending room history:", err);
     }
   });
 
@@ -115,17 +117,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("cursor-position", ({ userId, position }) => {
-    try {
-      const room = socket.roomCode;
-      if (room && userId && position) {
-        socket.to(room).emit("cursor-position", { userId, position });
-      }
-    } catch (error) {
-      console.error("Error in cursor-position:", error);
-    }
-  });
-
   socket.on("editor", ({ change, code }) => {
     try {
       io.to(code).emit("editor", change);
@@ -134,42 +125,55 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("text-message", ({ message, client, code }) => {
+  socket.on("text-message", async ({ message, client, code, tempId }) => {
     try {
-      io.to(code).emit("text-message", { message, client });
+      const user = await User.findOne({ uid: client });
+      const username = user ? user.username : "Unknown";
+      const messageData = {
+        userId: client,
+        username,
+        message,
+        timestamps: new Date(),
+        tempId,
+      };
+
+      const messageDBSearch = await Messages.findOneAndUpdate(
+        { room: code },
+        {
+          $push: { message: messageData },
+        },
+        {
+          upsert: true,
+          new: true,
+          runValidators: true,
+        }
+      );
+      const finalMessage =
+        messageDBSearch.message[messageDBSearch.message.length - 1];
+      io.to(code).emit("text-message", {
+        message: finalMessage.message,
+        client: finalMessage.userId, 
+        username: finalMessage.username,
+        timestamp: finalMessage.timestamps.toISOString(), 
+        tempId: finalMessage.tempId,
+      });
+      // console.log(`Message from ${username} in room ${code} processed.`);
     } catch (error) {
       console.error("Error in text-message:", error);
     }
-  });
-  socket.on("room-users", (roomCode) => {
-    const count = rooms[roomCode]?.length || 0;
-    io.to(roomCode).emit("room-users", count);
   });
 
   socket.on("ping-check", (cb) => {
     cb(); // Immediately call the callback
   });
-  socket.on("leave-room", ({ code, client }) => {
+
+  socket.on("leave-room", async ({ code, client }) => {
     try {
-      if (rooms[code]) {
-        rooms[code] = rooms[code].filter((id) => id !== client);
-        delete users[client];
-        socket.leave(code);
-
-        const now = new Date().toISOString();
-        if (!roomHistory[code]) roomHistory[code] = [];
-        roomHistory[code].push({
-          userId: client,
-          action: "leave",
-          time: now,
-          roomCode: code,
-        });
-        io.to(code).emit("room-users", rooms[code]?.length || 0);
-
-        io.to(code).emit("room-history", roomHistory[code]);
-
-        console.log(`User ${client} left room ${code}`);
-      }
+      await Room.updateOne(
+        { roomId: code },
+        { $pull: { users: { userId: client } } }
+      );
+      socket.leave(code);
     } catch (error) {
       console.error("Error in leave-room:", error);
     }
@@ -183,170 +187,12 @@ io.on("connection", (socket) => {
           connections[room] = connections[room].filter(
             (id) => id !== socket.id
           );
-          io.to(room).emit("room-users", connections[room]?.length || 0);
-
-          io.to(room).emit("user-left", socket.id);
-          console.log(`Notified room ${room} about user ${socket.id} leaving`);
-
-          const userId = Object.keys(users).find((id) => users[id] === room);
-          if (userId) {
-            const now = new Date().toISOString();
-            if (!roomHistory[room]) roomHistory[room] = [];
-            roomHistory[room].push({
-              userId,
-              action: "leave",
-              time: now,
-            });
-
-            io.to(room).emit("room-history", roomHistory[room]);
-
-            delete users[userId];
-          }
         }
       }
-      delete timeOnline[socket.id];
     } catch (error) {
       console.error("Error in disconnect:", error);
     }
   });
-});
-
-// Import the Quiz model
-app.post("/api/init-quiz", async (req, res) => {
-  try {
-    const { subjects, difficulty, roomCode } = req.body;
-
-    // Get LLM response
-    const response = await generateQuiz(subjects, difficulty);
-    const val = response.content;
-
-    // Extract code block from markdown-style JSON
-    const matches = [...val.matchAll(/```json\n([\s\S]*?)\n```/g)];
-
-    if (!matches.length) {
-      console.error("❌ No JSON code block found in response.");
-      return res.status(500).json({ error: "No JSON found in AI response." });
-    }
-
-    const jsonString = matches[0][1].trim();
-
-    let rawQuizData;
-    try {
-      const repaired = jsonrepair(jsonString);
-      rawQuizData = JSON.parse(repaired);
-    } catch (err) {
-      console.error("❌ Failed to parse or repair JSON:", err.message);
-      return res.status(500).json({ error: "Invalid JSON format from AI." });
-    }
-    console.log(rawQuizData);
-
-    const newData = rawQuizData.map((q) => {
-      const correctIdx = q.options.indexOf(q.correctOption);
-      return {
-        question: q.question,
-        options: q.options,
-        correctAnswer: correctIdx,
-      };
-    });
-    const data = Quiz.findOne({ roomCode });
-    if (data !== null) {
-      await Quiz.updateOne(
-        { roomCode },
-        { $set: { quizData: newData } },
-        { upsert: true }
-      );
-    } else {
-      const addQuiz = new Quiz({
-        roomCode,
-        quizData: newData,
-      });
-      await addQuiz.save();
-    }
-    res.json({
-      success: true,
-      message: "Quiz initialized and saved successfully!",
-    });
-  } catch (error) {
-    console.error("❌ Error generating quiz:", error);
-    res.status(500).json({ error: "Failed to generate quiz." });
-  }
-});
-
-app.post("/api/save-quiz", async (req, res) => {
-  try {
-    const { roomCode, quizData } = req.body;
-
-    // Validate received data
-    if (!roomCode || !Array.isArray(quizData)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid JSON format" });
-    }
-
-    for (const question of quizData) {
-      if (
-        typeof question.question !== "string" ||
-        !Array.isArray(question.options) ||
-        question.options.length < 2 ||
-        typeof question.correctAnswer !== "number" ||
-        question.correctAnswer < 0 ||
-        question.correctAnswer >= question.options.length
-      ) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid question format" });
-      }
-    }
-
-    // Save to DB
-    let existingQuiz = await Quiz.findOne({ roomCode });
-    if (existingQuiz) {
-      existingQuiz.quizData = quizData;
-      await existingQuiz.save();
-    } else {
-      await Quiz.create({ roomCode, quizData });
-    }
-
-    res.json({ success: true, message: "Quiz saved successfully!" });
-  } catch (error) {
-    console.error("Error saving quiz:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-// API to Fetch Quiz
-app.post("/api/get-quiz", async (req, res) => {
-  const { roomCode } = req.body;
-  try {
-    const quiz = await Quiz.findOne({ roomCode: roomCode });
-    if (!quiz) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Quiz not found" });
-    }
-    res.json({ success: true, quizData: quiz.quizData });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Error fetching quiz" });
-  }
-});
-
-app.post("/results", async (req, res) => {
-  try {
-    const { userId, roomCode, score, totalQuestions, answers } = req.body;
-
-    const newResult = new Result({
-      userId,
-      roomCode,
-      score,
-      totalQuestions,
-      answers,
-    });
-
-    await newResult.save();
-    res.json({ message: "Results saved successfully!" });
-  } catch (error) {
-    res.status(500).json({ message: "Error saving results", error });
-  }
 });
 
 // Nodemailer configuration
@@ -358,7 +204,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Add this before the server.listen
 app.post("/send-code", async (req, res) => {
   const { roomCode, email } = req.body;
   console.log(roomCode, email);

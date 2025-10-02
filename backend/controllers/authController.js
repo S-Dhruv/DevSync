@@ -49,7 +49,7 @@ export async function login(req, res) {
     }
 
     const token = sign(
-      { userId: user._id, 
+      { userId: user.uid, 
         role: user.role,
         name:user.username,
         email:user.email,
@@ -57,12 +57,11 @@ export async function login(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
-    // console.log(user.uid);
+    console.log(user.uid);
     return res.status(200).json({
       token,
-      userId: user._id,
+      userId: user.uid,
       message: "User logged in",
-      id: user.uid,
       role:user.role
     });
   } catch (error) {
