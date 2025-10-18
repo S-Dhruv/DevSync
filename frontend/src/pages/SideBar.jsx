@@ -36,7 +36,7 @@ const Sidebar = () => {
 
   const navItems = [
     { name: "Home", link: "/dashboard", icon: <HomeIcon /> },
-    { name: "Resources", link: "/docs", icon: <ArticleIcon /> },
+    // { name: "Resources", link: "/docs", icon: <ArticleIcon /> },
     { name: "Board", link: "/editor", icon: <EditRoundedIcon /> },
     { name: "Collab", link: "/collab", icon: <CodeIcon /> },
     { name: "Quiz", link: "/test", icon: <QuizIcon /> },

@@ -24,20 +24,6 @@ import VideoCall from "./pages/VideoCall";
 import Board from "./pages/Board";
 import Dashboard from "./pages/Dashboard";
 function App() {
-  // const [isLogin, setIsLogin] = useState(
-  //   localStorage.getItem("isLogin") === "true"
-  // );
-
-  // useEffect(() => {
-  //   const handleStorageChange = () => {
-  //     setIsLogin(localStorage.getItem("isLogin") === "true");
-  //   };
-
-  //   window.addEventListener("storage", handleStorageChange);
-  //   return () => {
-  //     window.removeEventListener("storage", handleStorageChange);
-  //   };
-  // }, []);
 
   const ProtectedRoute = ({ children }) => {
     return localStorage.getItem("token") !== null ? (
@@ -99,7 +85,7 @@ function App() {
               }
             />
           </Routes>
-          <ChatBot />
+          {/* <ChatBot /> */}
         </main>
       </div>
     </Router>
