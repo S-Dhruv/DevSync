@@ -12,7 +12,7 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { jwtDecode } from "jwt-decode";
-const socket = io.connect("https://codingassistant.onrender.com/");
+const socket = io.connect("https://dev-sync-indol.vercel.app/");
 import axios from "axios";
 
 const client = (token) => {
@@ -40,7 +40,7 @@ const Forums = () => {
   const fetchMessages = async (roomCode) => {
     try {
       const response = await axios.post(
-        "https://codingassistant.onrender.com/getMessage",
+        "https://dev-sync-indol.vercel.app/getMessage",
         {
           roomCode,
         }

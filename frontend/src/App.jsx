@@ -17,14 +17,15 @@ import Sidebar from "./pages/SideBar";
 import ChatBot from "./pages/ChatBot";
 import NotFound from "./pages/NotFound";
 // import Room from "./pages/Room";
-// import QuizCreate from "./pages/QuizCreate";
+// import QuizCreate from "./pages/QuizCreate
+import Platform from "./pages/Platform";
+import CodeSandbox from "./pages/CodeSandbox";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import VideoCall from "./pages/VideoCall";
 import Board from "./pages/Board";
 import Dashboard from "./pages/Dashboard";
 function App() {
-
   const ProtectedRoute = ({ children }) => {
     return localStorage.getItem("token") !== null ? (
       children
@@ -81,6 +82,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Board />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sandbox"
+              element={
+                <ProtectedRoute>
+                  <CodeSandbox />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/platform"
+              element={
+                <ProtectedRoute>
+                  <Platform />
                 </ProtectedRoute>
               }
             />

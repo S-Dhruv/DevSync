@@ -92,7 +92,7 @@ export function QuizRenderer({ roomCode, userId }) {
     async function fetchQuiz() {
       try {
         const response = await axios.post(
-          "https://codingassistant.onrender.com/api/get-quiz",
+          "https://dev-sync-indol.vercel.app/api/get-quiz",
           { roomCode }
         );
         setQuizData(response.data.quizData);
@@ -156,7 +156,7 @@ export function QuizRenderer({ roomCode, userId }) {
 
   const saveResults = async () => {
     try {
-      await axios.post(`https://codingassistant.onrender.com/results`, {
+      await axios.post(`https://dev-sync-indol.vercel.app/results`, {
         userId,
         roomCode,
         score,

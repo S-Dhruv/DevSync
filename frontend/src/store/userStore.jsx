@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
-const BASE = "https://codingassistant.onrender.com/";
+const BASE = "https://dev-sync-indol.vercel.app/";
 
 export const userStore = create((set) => ({
   user: null,

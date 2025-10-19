@@ -13,43 +13,8 @@ import {
   BookOpen,
   Code,
 } from "lucide-react";
-import { io } from "socket.io-client";
-import { executeCode } from "../assets/api";
-import { jwtDecode } from "jwt-decode";
-
-// const socket = io.connect("https://dev-sync-indol.vercel.app/");
-const socket = io.connect("https://dev-sync-indol.vercel.app/");
-const CodeCollab = () => {
-  const nav = useNavigate();
-  const editorRef = useRef(null);
-  const [value, setValue] = useState("");
-  const [output, setOutput] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("");
-  const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [leave, setLeave] = useState(false);
-  const [stdinValue, setStdinValue] = useState("");
-  const roomCode = localStorage.getItem("roomCode");
-  const token = localStorage.getItem("token");
-  const client = () => {
-    try {
-      const decodedPayloud = jwtDecode(token);
-      return decodedPayloud.userId;
-    } catch {
-      return null;
-    }
-  };
-  // TODO: Add leave Room button
-  const leaveRoom = () => {
-    if (client === null) {
-      toast.error("Unknown Error");
-    }
-    socket.emit("leave-room", { code: roomCode, client });
-    localStorage.removeItem("roomCode");
-    setLeave(true);
-  };
-
+import { executeCode } from "/src/assets/api.js";
+const Platform = () => {
   const dummyQuestions = [
     {
       title: "Two Sum",
@@ -82,54 +47,32 @@ const CodeCollab = () => {
       },
     },
   ];
-
+  const editorRef = useRef(null);
+  const containerRef = useRef(null);
+  const resizerRef = useRef(null);
+  const [value, setValue] = useState(
+    "// Please select the language before starting",
+  );
+  const [output, setOutput] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [language, setLanguage] = useState("");
+  const [questions] = useState(dummyQuestions);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [stdinValue, setStdinValue] = useState("");
+  const [leftPanelWidth, setLeftPanelWidth] = useState(35);
   useEffect(() => {
-    setQuestions(dummyQuestions);
-    setStdinValue("");
-  }, []);
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-
-    if (!roomCode || client === null) {
-      toast.error("You are not in a collaboration room. Redirecting...");
-      setTimeout(() => nav("/"), 2000);
-      return;
+    if (questions.length > 0) {
+      setLanguage(questions[currentQuestionIndex].language);
+      setValue(`// Start coding for ${questions[currentQuestionIndex].title}`);
+      setStdinValue(""); // Clear input on question change
+      setOutput(null);
     }
-
-    socket.emit("join-room", { roomCode, client });
-
-    socket.on("editor", (change) => {
-      if (change !== value && editorRef.current?.getValue() !== change) {
-        setValue(change);
-      }
-    });
-
-    socket.on("leave-room", ({ code, client }) => {
-      toast.info(`${client} left room ${code}`);
-    });
-
-    return () => {
-      socket.off("editor");
-      socket.off("leave-room");
-    };
-  }, [roomCode, client]);
+  }, [currentQuestionIndex, questions]);
 
   const onMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
   };
-
-  const handleEditor = useCallback(
-    debounce((newValue) => {
-      socket.emit("editor", { change: newValue, code: roomCode });
-    }, 500),
-    [roomCode],
-  );
-
-  useEffect(() => {
-    return () => handleEditor.cancel();
-  }, [handleEditor]);
-
   const runCode = async () => {
     const sourceCode = editorRef.current?.getValue().trim();
     if (!sourceCode) {
@@ -157,11 +100,10 @@ const CodeCollab = () => {
   };
 
   const resetCode = () => {
-    const resetValue = `// Code reset at ${new Date().toLocaleTimeString()}`;
+    const resetValue = `// Code reset at ${new Date().toLocaleTimeString()} for question ${currentQuestionIndex + 1}`;
     setValue(resetValue);
-    socket.emit("editor", { change: resetValue, code: roomCode });
-    setStdinValue("");
     setOutput(null);
+    setStdinValue("");
   };
 
   const nextQuestion = () => {
@@ -173,12 +115,44 @@ const CodeCollab = () => {
     );
 
   const currentQuestion = questions[currentQuestionIndex];
+  const stopResizing = useCallback(() => {
+    document.removeEventListener("mousemove", resizePanel);
+    document.removeEventListener("mouseup", stopResizing);
+  }, []);
+  const resizePanel = useCallback((e) => {
+    if (!containerRef.current) return;
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const newWidthInPixels = e.clientX - containerRect.left;
+    const newWidthPercent = (newWidthInPixels / containerRect.width) * 100;
+
+    // Set bounds (20% to 80%)
+    const clampedWidth = Math.max(20, Math.min(80, newWidthPercent));
+
+    setLeftPanelWidth(clampedWidth);
+  }, []);
+
+  const startResizing = useCallback(
+    (e) => {
+      e.preventDefault();
+      document.addEventListener("mousemove", resizePanel);
+      document.addEventListener("mouseup", stopResizing);
+    },
+    [resizePanel, stopResizing],
+  );
 
   return (
     <div className="bg-slate-900 text-white min-h-screen font-sans">
       <ToastContainer theme="dark" position="top-right" />
-      <div className="flex flex-col lg:flex-row gap-4 p-4 h-screen">
-        <div className="lg:w-[35%] bg-slate-800/50 border border-slate-700 rounded-xl flex flex-col p-6 shadow-lg">
+      <div
+        ref={containerRef}
+        className="flex gap-0 p-4 min-h-screen relative"
+        style={{ minHeight: "100vh", paddingRight: 0 }}
+      >
+        <div
+          style={{ width: `${leftPanelWidth}%` }}
+          className="flex flex-col bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-lg mr-2 transition-width duration-100 ease-linear"
+        >
           <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
             <h2 className="text-xl font-bold text-purple-400 flex items-center gap-2">
               <BookOpen size={20} /> Problem Description
@@ -225,6 +199,18 @@ const CodeCollab = () => {
                   </p>
                 </div>
               </div>
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
+                <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
+                  <Code size={16} /> Program Input (stdin)
+                </h3>
+                <textarea
+                  rows={3}
+                  value={stdinValue}
+                  onChange={(e) => setStdinValue(e.target.value)}
+                  placeholder="Enter input here (e.g., test numbers, lines of text) for your program to read."
+                  className="w-full bg-slate-700 text-cyan-300 font-mono text-sm border border-slate-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 resize-none"
+                />
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-slate-500 animate-pulse">
@@ -232,8 +218,16 @@ const CodeCollab = () => {
             </div>
           )}
         </div>
-
-        <div className="lg:w-[65%] flex flex-col gap-4">
+        <div
+          ref={resizerRef}
+          onMouseDown={startResizing}
+          className="w-2 cursor-col-resize bg-slate-700 hover:bg-purple-500 transition-colors duration-200"
+          style={{ height: "100vh", margin: "0 -1px" }}
+        ></div>
+        <div
+          style={{ width: `${100 - leftPanelWidth}%` }}
+          className="flex flex-col gap-4 pl-2"
+        >
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex justify-between items-center shadow-lg">
             <div className="flex items-center gap-4">
               <div className="relative">
@@ -272,40 +266,38 @@ const CodeCollab = () => {
           </div>
 
           <div className="flex-grow bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-inner">
-            <Editor
-              height="100%"
-              theme="vs-dark"
-              language={language}
-              value={value}
-              onMount={onMount}
-              onChange={(newValue) => {
-                setValue(newValue);
-                handleEditor(newValue);
+            <div
+              style={{
+                height: "100%",
+                padding: "20px",
+                fontSize: "14px",
+                fontFamily: "monospace",
               }}
-              options={{
-                fontSize: 14,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                wordWrap: "on",
-                padding: { top: 20, bottom: 20 },
-                lineNumbers: "on",
-                roundedSelection: false,
-              }}
-            />
+            >
+              <Editor
+                height="100%"
+                theme="vs-dark"
+                language={language}
+                value={value}
+                onMount={onMount}
+                onChange={(newValue) => {
+                  setValue(newValue);
+                }}
+                options={{
+                  fontSize: 14,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  wordWrap: "on",
+                  padding: { top: 20, bottom: 20 },
+                  lineNumbers: "on",
+                  roundedSelection: false,
+                }}
+              />
+            </div>
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
-            <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
-              <Code size={16} /> Program Input (stdin)
-            </h3>
-            <textarea
-              rows={3}
-              value={stdinValue}
-              onChange={(e) => setStdinValue(e.target.value)}
-              placeholder="Enter input here (e.g., test numbers, lines of text) for your program to read."
-              className="w-full bg-slate-700 text-cyan-300 font-mono text-sm border border-slate-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 resize-none"
-            />
-          </div>
+
+          {/* Console Output */}
           <div className="h-48 bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
             <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
               <Terminal size={16} /> Console
@@ -329,5 +321,4 @@ const CodeCollab = () => {
     </div>
   );
 };
-
-export default CodeCollab;
+export default Platform;

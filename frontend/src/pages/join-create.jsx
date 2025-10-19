@@ -18,7 +18,7 @@ import {
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
-const socket = io.connect("https://codingassistant.onrender.com/");
+const socket = io.connect("https://dev-sync-indol.vercel.app/");
 
 const PomodoroCircle = ({ time, duration, isRunning, onToggle }) => {
   const radius = 50;
@@ -175,7 +175,7 @@ const JoinCreate = () => {
       return toast.warn("Please enter a room code and email.");
     try {
       const res = await axios.post(
-        "https://codingassistant.onrender.com/send-code",
+        "https://dev-sync-indol.vercel.app/send-code",
         {
           roomCode,
           email,
