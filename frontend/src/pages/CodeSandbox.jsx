@@ -2,13 +2,18 @@ import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { jwtDecode } from "jwt-decode";
 import Platform from "./Platform";
+import { forEach } from "lodash";
+import axios from "axios";
+import "react-toastify/dist/ReactToastify.css";
 const CodeSandbox = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [title, setTitle] = useState("");
   const [formData, setFormData] = useState({
     Questions: [],
     TestCases: [],
     Outputs: [],
   });
+  const [roomId, setRoomId] = useState(localStorage.getItem("roomCode"));
   const [role, setRole] = useState("user");
   useEffect(() => {
     if (!token) {
@@ -95,6 +100,52 @@ const CodeSandbox = () => {
       return { ...prevFormData, TestCases: newTestCases, Outputs: newOutputs };
     });
   };
+  const handleSubmit = async () => {
+    const question = formData.Questions;
+    const testCases = formData.TestCases;
+    const outputs = formData.Outputs;
+    const response = await axios.post("http://localhost:5000/api/submit-test", {
+      roomId,
+      title,
+      question,
+      testCases,
+      outputs,
+    });
+    console.log("Sent");
+    console.log(question, testCases, outputs);
+    if (response.status === 200) {
+      toast.success("Test case submitted successfully");
+    } else {
+      toast.error(`Failed to submit test case: ${response.data.message}`);
+    }
+  };
+  // TODO: finish setting up dashboard for tests
+  const handleGetOneTest = async (testName) => {
+    try {
+      // still in prod let it be local
+      const response = await axios.get(`http://localhost:5000/api/get-test/`, {
+        roomId: roomId,
+        title: testName,
+      });
+      console.log(response.data);
+    } catch (err) {
+      toast.error("error has occured", err.message);
+    }
+  };
+  const handleGetAllTests = async () => {
+    console.log(roomId);
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/get-tests/`,
+        {
+          roomId,
+        },
+      );
+      console.log(response.data);
+    } catch (err) {
+      toast.error("error has occured", err.message);
+    }
+  };
   return (
     <div className="min-h-screen bg-slate-900 text-white font-inter">
       <ToastContainer position="bottom-right" theme="dark" />
@@ -111,6 +162,20 @@ const CodeSandbox = () => {
           >
             CodeSandbox Admin Setup
           </h1>
+          <div className="relative p-[2px] rounded-xl overflow-hidden mb-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 animate-pulse" />
+            <div className="relative bg-slate-900 rounded-xl p-4 shadow-lg">
+              <label className="block text-violet-200 font-semibold mb-2">
+                Test Name:
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-slate-800 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 shadow-inner transition duration-200"
+              />
+            </div>
+          </div>
 
           <button
             onClick={handleAddQuestion}
@@ -118,7 +183,12 @@ const CodeSandbox = () => {
           >
             ➕ Add New Programming Question
           </button>
-
+          <button
+            onClick={handleGetAllTests}
+            className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-200 mb-6 flex items-center justify-center"
+          >
+            ➕ Get All Tests
+          </button>
           <div className="space-y-6">
             {formData.Questions.map((question, qIndex) => (
               <div
@@ -221,12 +291,9 @@ const CodeSandbox = () => {
               </div>
             ))}
           </div>
-          {/* TODO: Add backend endpoint for submitting all questions */}
           {formData.Questions.length > 0 && (
             <button
-              onClick={() => {
-                console.log("Final Submission Data:", formData);
-              }}
+              onClick={handleSubmit}
               className="mt-8 w-full bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-200"
             >
               Submit All Questions

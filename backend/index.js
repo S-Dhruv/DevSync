@@ -9,9 +9,11 @@ import { rooms, users } from "./sharedState/sharedState.js";
 import roomRoutes from "./routes/roomRoutes.js";
 import nodemailer from "nodemailer";
 import quizRoutes from "./routes/quizRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
 import Room from "./models/Room.js";
 import Messages from "./models/Messages.js";
 import User from "./models/User.js";
+
 dotenv.config();
 
 const app = express();
@@ -43,6 +45,7 @@ let connections = {};
 app.use("/", authRoutes);
 app.use("/", roomRoutes);
 app.use("/", quizRoutes);
+app.use("/", testRoutes);
 app.post("/getMessage", async (req, res) => {
   const { roomCode } = req.body;
   try {
@@ -76,12 +79,12 @@ io.on("connection", (socket) => {
         });
       } else {
         const userExists = (roomSearch.users || []).some(
-          (u) => u.userId === userId
+          (u) => u.userId === userId,
         );
         if (!userExists) {
           await Room.updateOne(
             { roomId: roomCode },
-            { $push: { users: { userId } } }
+            { $push: { users: { userId } } },
           );
         }
       }
@@ -90,7 +93,6 @@ io.on("connection", (socket) => {
       const messageDoc = await Messages.findOne({ room: roomCode });
       if (messageDoc && messageDoc.message) {
         socket.emit("room-messages", messageDoc.message);
-       
       }
 
       if (!connections[roomCode]) connections[roomCode] = [];
@@ -146,15 +148,15 @@ io.on("connection", (socket) => {
           upsert: true,
           new: true,
           runValidators: true,
-        }
+        },
       );
       const finalMessage =
         messageDBSearch.message[messageDBSearch.message.length - 1];
       io.to(code).emit("text-message", {
         message: finalMessage.message,
-        client: finalMessage.userId, 
+        client: finalMessage.userId,
         username: finalMessage.username,
-        timestamp: finalMessage.timestamps.toISOString(), 
+        timestamp: finalMessage.timestamps.toISOString(),
         tempId: finalMessage.tempId,
       });
       // console.log(`Message from ${username} in room ${code} processed.`);
@@ -171,7 +173,7 @@ io.on("connection", (socket) => {
     try {
       await Room.updateOne(
         { roomId: code },
-        { $pull: { users: { userId: client } } }
+        { $pull: { users: { userId: client } } },
       );
       socket.leave(code);
     } catch (error) {
@@ -185,7 +187,7 @@ io.on("connection", (socket) => {
       for (const room in connections) {
         if (connections[room].includes(socket.id)) {
           connections[room] = connections[room].filter(
-            (id) => id !== socket.id
+            (id) => id !== socket.id,
           );
         }
       }
