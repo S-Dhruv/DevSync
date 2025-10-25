@@ -14,7 +14,7 @@ const Login = () => {
   const handle = async (e) => {
     e.preventDefault();
     const resp = await login(formData);
-    console.log(resp.status);
+    console.log(resp);
     if (resp.status == 200) {
       // setIsLogin(true);
       localStorage.setItem("token", resp.data.token);
