@@ -3,22 +3,28 @@
 **DevSync** is a MERN stack-based **real-time collaboration platform** designed to streamline teamwork among developers. It offers **live code sharing**, **group chat**, **voice/video calling**, and **AI-generated quizzes**
 
 To implement:
-1. Docker based test case validatior for given code
-2. AI code reviewer
-3. Version Control System
+1. AI code reviewer
+2. Version Control System
 
 Currently work in progress!
 
 ---
 
-## 🌟 Features
+🚀 Features
 
-- 🔐 **JWT Authentication** for secure access
-- 📝 **Real-Time Code Editor** using Monaco Editor & Piston API (multi-language support)
-- 💬 **Group Chat** with **Socket.IO** for instant communication
-- 🎥 **Video & Voice Calls** powered by **WebRTC** (up to 5+ users)
-- 🧠 **AI-Generated Quizzes** using **LangChain** (10+ unique quizzes)
-- 🖥️ **Responsive Frontend** built with React.js and Tailwind CSS
+🔐 JWT Authentication for secure access
+
+📝 Real-Time Code Editor using Monaco Editor & Piston API (multi-language support)
+
+🐳 Docker-Based Execution Engine for safe and isolated code execution
+
+💬 Group Chat with Socket.IO for instant communication
+
+🎥 Video & Voice Calls powered by WebRTC (supports 5+ users)
+
+🧠 AI-Generated Quizzes using LangChain (10+ unique quizzes)
+
+🖥️ Responsive Frontend built with React.js and Tailwind CSS
 
 ---
 
