@@ -17,8 +17,8 @@ import { io } from "socket.io-client";
 import { executeCode } from "../assets/api";
 import { jwtDecode } from "jwt-decode";
 
-// const socket = io.connect("https://dev-sync-indol.vercel.app/");
-const socket = io.connect("https://dev-sync-indol.vercel.app/");
+// const socket = io.connect("https://codingassistant.onrender.com/");
+const socket = io.connect("https://codingassistant.onrender.com/");
 const CodeCollab = () => {
   const nav = useNavigate();
   const editorRef = useRef(null);

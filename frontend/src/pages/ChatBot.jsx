@@ -26,7 +26,7 @@ export default function ChatBot() {
 
     try {
       const response = await axios.post(
-        "https://dev-sync-indol.vercel.app/prompt",
+        "https://codingassistant.onrender.com/prompt",
         {
           prompt: input,
         }

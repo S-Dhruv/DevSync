@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { nanoid } from "nanoid";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
-const BASE = "https://dev-sync-indol.vercel.app/";
-// const BASE = "https://dev-sync-indol.vercel.app/"
+const BASE = "https://codingassistant.onrender.com/";
+// const BASE = "https://codingassistant.onrender.com/"
 
 const roomStore = create((set) => ({
   room: null,
