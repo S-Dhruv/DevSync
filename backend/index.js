@@ -17,15 +17,22 @@ import User from "./models/User.js";
 dotenv.config();
 
 const app = express();
-app.use(json());
 const server = createServer(app);
 app.use(
   cors({
-    origin: "https://dev-sync-indol.vercel.app", // ❌ no trailing slash
-    methods: ["GET", "POST"],
+    origin: ["https://dev-sync-indol.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   }),
 );
+
+app.options("*", cors());
+
+app.use(json());
+
+app.get("/", (req, res) => {
+  res.status(200).send("Server is running ✅");
+});
 
 const io = new Server(server, {
   cors: {
