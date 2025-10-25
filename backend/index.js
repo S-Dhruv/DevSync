@@ -19,13 +19,21 @@ dotenv.config();
 const app = express();
 app.use(json());
 const server = createServer(app);
+app.use(
+  cors({
+    origin: "https://dev-sync-indol.vercel.app", // ❌ no trailing slash
+    methods: ["GET", "POST"],
+    credentials: true,
+  }),
+);
+
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://dev-sync-indol.vercel.app", // ❌ no trailing slash
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
-
-app.use(cors({ origin: "*" }));
 
 //mongoDB connection
 const connectDB = async () => {

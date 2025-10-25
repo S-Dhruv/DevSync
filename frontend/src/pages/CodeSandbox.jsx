@@ -104,7 +104,7 @@ const CodeSandbox = () => {
     const question = formData.Questions;
     const testCases = formData.TestCases;
     const outputs = formData.Outputs;
-    const response = await axios.post("http://localhost:5000/api/submit-test", {
+    const response = await axios.post("https://codingassistant.onrender.com/api/submit-test", {
       roomId,
       title,
       question,
@@ -123,7 +123,7 @@ const CodeSandbox = () => {
   const handleGetOneTest = async (testName) => {
     try {
       // still in prod let it be local
-      const response = await axios.get(`http://localhost:5000/api/get-test/`, {
+      const response = await axios.get(`https://codingassistant.onrender.com/api/get-test/`, {
         roomId: roomId,
         title: testName,
       });
@@ -136,7 +136,7 @@ const CodeSandbox = () => {
     console.log(roomId);
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/get-tests/`,
+        `https://codingassistant.onrender.com/api/get-tests/`,
         {
           roomId,
         },
