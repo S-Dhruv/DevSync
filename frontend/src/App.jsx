@@ -16,6 +16,7 @@ import NavBar from "./pages/NavBar";
 import Sidebar from "./pages/SideBar";
 import ChatBot from "./pages/ChatBot";
 import NotFound from "./pages/NotFound";
+import TestDashboard from "./pages/TestDashboard";
 // import Room from "./pages/Room";
 // import QuizCreate from "./pages/QuizCreate
 import Platform from "./pages/Platform";
@@ -94,10 +95,18 @@ function App() {
               }
             />
             <Route
-              path="/platform"
+              path="/platform/:testId"
               element={
                 <ProtectedRoute>
                   <Platform />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/testdashboard"
+              element={
+                <ProtectedRoute>
+                  <TestDashboard />
                 </ProtectedRoute>
               }
             />

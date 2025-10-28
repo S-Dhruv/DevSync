@@ -15,13 +15,15 @@ import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import PersonIcon from "@mui/icons-material/Person";
 import ArticleIcon from "@mui/icons-material/Article";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import TerminalIcon from "@mui/icons-material/Terminal";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [isLogged, setIsLogged] = useState(
-    localStorage.getItem("token") !== null
+    localStorage.getItem("token") !== null,
   );
 
   const toggleSidebar = () => setIsOpen(!isOpen);
@@ -42,6 +44,7 @@ const Sidebar = () => {
     { name: "Quiz", link: "/test", icon: <QuizIcon /> },
     { name: "Chat Room", link: "/forums", icon: <ForumIcon /> },
     { name: "Video Call", link: "/videoCall", icon: <VideoChatRoundedIcon /> },
+    { name: "Test Dashboard", link: "/testdashboard", icon: <DashboardIcon /> },
   ];
 
   const hideNavbarPaths = ["/", "/signup", "/login"];
@@ -87,7 +90,7 @@ const Sidebar = () => {
                     isOpen ? "px-4" : "justify-center",
                     location.pathname === item.link
                       ? "text-purple-400 "
-                      : "text-gray-400 hover:text-white"
+                      : "text-gray-400 hover:text-white",
                   )}
                   title={!isOpen ? item.name : ""}
                 >
@@ -105,7 +108,7 @@ const Sidebar = () => {
             className={cn(
               "flex items-center transition-colors w-full",
               isOpen ? "px-4 py-2" : "justify-center py-2",
-              "text-green-400 hover:text-green-300"
+              "text-green-400 hover:text-green-300",
             )}
           >
             <span className="text-xl">
@@ -119,7 +122,7 @@ const Sidebar = () => {
             className={cn(
               "flex items-center transition-colors w-full",
               isOpen ? "px-4 py-2" : "justify-center py-2",
-              "text-red-400 hover:text-red-300"
+              "text-red-400 hover:text-red-300",
             )}
           >
             <span className="text-xl">
@@ -142,8 +145,7 @@ const Sidebar = () => {
             exit={{ opacity: 0, x: -300 }}
             transition={{ duration: 0.3 }}
             className="w-full h-full"
-          >
-          </motion.div>
+          ></motion.div>
         </AnimatePresence>
       </div>
     </>

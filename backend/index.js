@@ -13,20 +13,18 @@ import testRoutes from "./routes/testRoutes.js";
 import Room from "./models/Room.js";
 import Messages from "./models/Messages.js";
 import User from "./models/User.js";
-
+import Test from "./models/Test.js";
 dotenv.config();
 
 const app = express();
 const server = createServer(app);
 app.use(
   cors({
-    origin: ["https://dev-sync-indol.vercel.app"],
+    origin: "http://localhost:5173", // ✅ Explicit frontend origin
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-
-app.options("*", cors());
 
 app.use(json());
 
@@ -36,9 +34,8 @@ app.get("/", (req, res) => {
 
 const io = new Server(server, {
   cors: {
-    origin: "https://dev-sync-indol.vercel.app", // ❌ no trailing slash
+    origin: "*",
     methods: ["GET", "POST"],
-    credentials: true,
   },
 });
 
@@ -61,6 +58,8 @@ app.use("/", authRoutes);
 app.use("/", roomRoutes);
 app.use("/", quizRoutes);
 app.use("/", testRoutes);
+
+
 app.post("/getMessage", async (req, res) => {
   const { roomCode } = req.body;
   try {

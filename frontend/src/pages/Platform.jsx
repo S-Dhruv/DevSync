@@ -3,7 +3,7 @@ import { debounce } from "lodash";
 import { Editor } from "@monaco-editor/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   RotateCcw,
   Play,
@@ -13,40 +13,52 @@ import {
   BookOpen,
   Code,
 } from "lucide-react";
+import JSZip from "jszip";
 import { executeCode } from "/src/assets/api.js";
+import axios from "axios";
 const Platform = () => {
-  const dummyQuestions = [
-    {
-      title: "Two Sum",
-      description:
-        "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
-      example: {
-        input: "nums = [2, 7, 11, 15], target = 9",
-        output: "[0, 1]",
-        explanation: "Because nums[0] + nums[1] == 9, we return [0, 1].",
-      },
-    },
-    {
-      title: "Reverse a Linked List",
-      description:
-        "Given the `head` of a singly linked list, reverse the list, and return the reversed list.",
-      example: {
-        input: "head = [1,2,3,4,5]",
-        output: "[5,4,3,2,1]",
-        explanation: "The list is reversed node by node.",
-      },
-    },
-    {
-      title: "Valid Parentheses",
-      description:
-        "Given a string `s` containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
-      example: {
-        input: "s = '()[]{}'",
-        output: "true",
-        explanation: "All brackets are matched and closed properly.",
-      },
-    },
-  ];
+  const zip = new JSZip();
+  const nav = useNavigate();
+  const { testId } = useParams();
+  const [roomCode, setRoomCode] = useState(
+    localStorage.getItem("roomCode") || "",
+  );
+  const [dummyQuestions, setDummyQuestions] = useState([]);
+  const [onQuestion, setOnQuestion] = useState("");
+  const [testCases, setTestCases] = useState([]);
+  const [expectedOutputs, setExpectedOutputs] = useState([]);
+  const [code, setCode] = useState("");
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const res = await axios.post("https://codingassistant.onrender.com/api/get-test", {
+          roomCode,
+          testId,
+        });
+        // console.log(
+        //   "Fetched questions:",
+        //   res.data.test.questions.map((q) => ({
+        //     questionName: q.questionName[0],
+        //     testCases: q.testCases,
+        //     output: q.Output,
+        //     _id: q._id,
+        //   })),
+        // );
+        setDummyQuestions(
+          res.data.test.questions.map((q) => ({
+            questionName: q.questionName[0],
+            testCases: q.testCases,
+            output: q.Output,
+            _id: q._id,
+          })),
+        );
+      } catch (error) {
+        console.error("Error fetching questions:", error);
+      }
+    };
+
+    fetchQuestions();
+  }, [roomCode, testId]);
   const editorRef = useRef(null);
   const containerRef = useRef(null);
   const resizerRef = useRef(null);
@@ -56,14 +68,17 @@ const Platform = () => {
   const [output, setOutput] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState("");
-  const [questions] = useState(dummyQuestions);
+  const [questions, setQuestions] = useState(dummyQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [stdinValue, setStdinValue] = useState("");
   const [leftPanelWidth, setLeftPanelWidth] = useState(35);
+  const [terminalOutput, setTerminalOutput] = useState([]);
   useEffect(() => {
     if (questions.length > 0) {
-      setLanguage(questions[currentQuestionIndex].language);
-      setValue(`// Start coding for ${questions[currentQuestionIndex].title}`);
+      console.log(questions);
+      setValue(
+        `// Start coding for ${questions[currentQuestionIndex].questionName}`,
+      );
       setStdinValue(""); // Clear input on question change
       setOutput(null);
     }
@@ -82,8 +97,8 @@ const Platform = () => {
     setIsLoading(true);
     setOutput("Running code...");
     try {
-      console.log(sourceCode);
-      console.log(language);
+      // console.log(sourceCode);
+      // console.log(language);
       const { run: result } = await executeCode(
         sourceCode,
         language,
@@ -119,6 +134,9 @@ const Platform = () => {
     document.removeEventListener("mousemove", resizePanel);
     document.removeEventListener("mouseup", stopResizing);
   }, []);
+  useEffect(() => {
+    setQuestions(dummyQuestions);
+  }, [dummyQuestions]);
   const resizePanel = useCallback((e) => {
     if (!containerRef.current) return;
 
@@ -140,6 +158,52 @@ const Platform = () => {
     },
     [resizePanel, stopResizing],
   );
+  const [isSubmitting, setIsSubmitting] = useState(false); // new state
+  const handleSubmit = async () => {
+    const formData = new FormData();
+    setIsSubmitting(true);
+    setTerminalOutput([]);
+    formData.append("language", language);
+    formData.append("question", JSON.stringify(currentQuestion.questionName));
+    let index = 1;
+    for (const f of currentQuestion.testCases) {
+      const file = new File([f], `input${index}.in`, { type: "text/plain" });
+      formData.append("inputs", file);
+      index++;
+    }
+    // console.log(formData);
+    const code = editorRef.current?.getValue().trim();
+    const codeFile = new File([code], `main.${language}`, {
+      type: "text/plain",
+    });
+    formData.append("code", codeFile);
+    // console.log(codeFile);
+    const validations = JSON.stringify(currentQuestion.output, null, 2);
+    // console.log(validations);
+    const validationFile = new File([validations], "validations.json", {
+      type: "application/json",
+    });
+    formData.append("validations", validationFile);
+
+    // for (const [key, value] of formData.entries()) {
+    //   console.log(`${key}:`, value);
+    // }
+
+    try {
+      const response = await axios.post(
+        "https://code-exec-rwoe.onrender.com/submit",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      toast.success("Code submitted successfully!");
+      // console.log(response.data.finalOutput);
+      setTerminalOutput(response.data.finalOutput || ["No output received."]);
+    } catch (err) {
+      toast.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-slate-900 text-white min-h-screen font-sans">
@@ -177,28 +241,36 @@ const Platform = () => {
           {currentQuestion ? (
             <div className="space-y-4 overflow-y-auto flex-grow pr-2">
               <h3 className="text-xl font-semibold text-white">
-                {currentQuestion.title}
+                {currentQuestion.questionName}
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {currentQuestion.description}
-              </p>
+              <button onClick={handleSubmit}>Submit</button>
               <div className="mt-4">
-                <h4 className="font-semibold text-slate-300 mb-2">Example:</h4>
-                <div className="bg-slate-900/70 rounded-lg p-4 space-y-2 text-sm font-mono border border-slate-700">
-                  <p>
-                    <span className="text-cyan-400">Input:</span>{" "}
-                    {currentQuestion.example.input}
+                <h4 className="font-semibold text-slate-300 mb-2">
+                  Test Cases:
+                </h4>
+                {currentQuestion.testCases &&
+                currentQuestion.testCases.length > 0 ? (
+                  currentQuestion.testCases.map((test, index) => (
+                    <div
+                      key={index}
+                      className="bg-slate-900/70 rounded-lg p-4 space-y-2 text-sm font-mono border border-slate-700 mb-2"
+                    >
+                      <p>
+                        <span className="text-cyan-400">Input:</span> {test}
+                      </p>
+                      <p>
+                        <span className="text-cyan-400">Expected Output:</span>{" "}
+                        {currentQuestion.output[index]}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm italic">
+                    No test cases available.
                   </p>
-                  <p>
-                    <span className="text-cyan-400">Output:</span>{" "}
-                    {currentQuestion.example.output}
-                  </p>
-                  <p>
-                    <span className="text-slate-500">Explanation:</span>{" "}
-                    {currentQuestion.example.explanation}
-                  </p>
-                </div>
+                )}
               </div>
+
               <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
                 <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
                   <Code size={16} /> Program Input (stdin)
@@ -242,7 +314,7 @@ const Platform = () => {
                 >
                   <option value="java">Java</option>
                   <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
+                  <option value="python3">Python</option>
                   <option value="cpp">C++</option>
                   <option value="c">C</option>
                 </select>
@@ -302,19 +374,33 @@ const Platform = () => {
             <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
               <Terminal size={16} /> Console
             </h3>
-            <div className="font-mono text-sm text-slate-400 whitespace-pre-wrap overflow-y-auto flex-grow pt-2 pr-2">
-              {output ? (
-                <span
-                  className={
-                    output.startsWith("Error")
-                      ? "text-red-400"
-                      : "text-green-400"
-                  }
-                >{`> ${output}`}</span>
-              ) : (
-                <span className="text-slate-600">{`> Output will appear here...`}</span>
-              )}
-            </div>
+
+            {isSubmitting ? (
+              <div className="flex items-center justify-center flex-grow text-slate-300 font-mono">
+                Running submission...
+              </div>
+            ) : terminalOutput.length > 0 ? (
+              <div className="font-mono text-sm text-slate-400 whitespace-pre-wrap overflow-y-auto flex-grow pt-2 pr-2">
+                {terminalOutput.map((line, index) => (
+                  <div
+                    key={index}
+                    className={
+                      line === "Correct"
+                        ? "text-green-400"
+                        : line === "Wrong"
+                          ? "text-red-400"
+                          : "text-yellow-400"
+                    }
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center flex-grow text-slate-400 font-mono">
+                Output will appear here...
+              </div>
+            )}
           </div>
         </div>
       </div>

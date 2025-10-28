@@ -27,10 +27,10 @@ export async function createTest(req, res) {
 }
 
 export async function getTests(req, res) {
-  const { roomId } = req.body;
+  const { roomCode } = req.body;
   try {
-    const tests = await Test.find({ roomId });
-    console.log(roomId);
+    const tests = await Test.find({ roomId: roomCode });
+    console.log(roomCode);
     return res.status(200).json({ tests });
   } catch (err) {
     console.log("Error", err);
@@ -38,9 +38,10 @@ export async function getTests(req, res) {
 }
 
 export async function getTest(req, res) {
-  const { roomId, title } = req.body;
+  const { roomCode, testId } = req.body;
   try {
-    const test = await Test.findOne({ roomId, testName: title });
+    const test = await Test.findOne({ roomId: roomCode, _id: testId });
+    console.log(test);
     return res.status(200).json({ test });
   } catch (err) {
     console.log("Error", err);

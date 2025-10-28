@@ -5,6 +5,7 @@ import Platform from "./Platform";
 import { forEach } from "lodash";
 import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
+import TestDashboard from "./TestDashboard";
 const CodeSandbox = () => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [title, setTitle] = useState("");
@@ -104,13 +105,16 @@ const CodeSandbox = () => {
     const question = formData.Questions;
     const testCases = formData.TestCases;
     const outputs = formData.Outputs;
-    const response = await axios.post("https://codingassistant.onrender.com/api/submit-test", {
-      roomId,
-      title,
-      question,
-      testCases,
-      outputs,
-    });
+    const response = await axios.post(
+      "https://codingassistant.onrender.com/api/submit-test",
+      {
+        roomId,
+        title,
+        question,
+        testCases,
+        outputs,
+      },
+    );
     console.log("Sent");
     console.log(question, testCases, outputs);
     if (response.status === 200) {
@@ -123,10 +127,13 @@ const CodeSandbox = () => {
   const handleGetOneTest = async (testName) => {
     try {
       // still in prod let it be local
-      const response = await axios.get(`https://codingassistant.onrender.com/api/get-test/`, {
-        roomId: roomId,
-        title: testName,
-      });
+      const response = await axios.get(
+        `https://codingassistant.onrender.com/api/get-test/`,
+        {
+          roomId: roomId,
+          title: testName,
+        },
+      );
       console.log(response.data);
     } catch (err) {
       toast.error("error has occured", err.message);
@@ -301,7 +308,7 @@ const CodeSandbox = () => {
           )}
         </div>
       ) : (
-        <Platform />
+        <TestDashboard />
       )}
     </div>
   );

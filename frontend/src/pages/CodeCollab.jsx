@@ -225,6 +225,18 @@ const CodeCollab = () => {
                   </p>
                 </div>
               </div>
+              <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
+                <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
+                  <Code size={16} /> Program Input (stdin)
+                </h3>
+                <textarea
+                  rows={3}
+                  value={stdinValue}
+                  onChange={(e) => setStdinValue(e.target.value)}
+                  placeholder="Enter input here (e.g., test numbers, lines of text) for your program to read."
+                  className="w-full bg-slate-700 text-cyan-300 font-mono text-sm border border-slate-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 resize-none"
+                />
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-slate-500 animate-pulse">
@@ -294,18 +306,7 @@ const CodeCollab = () => {
               }}
             />
           </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
-            <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
-              <Code size={16} /> Program Input (stdin)
-            </h3>
-            <textarea
-              rows={3}
-              value={stdinValue}
-              onChange={(e) => setStdinValue(e.target.value)}
-              placeholder="Enter input here (e.g., test numbers, lines of text) for your program to read."
-              className="w-full bg-slate-700 text-cyan-300 font-mono text-sm border border-slate-600 rounded-md p-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 resize-none"
-            />
-          </div>
+
           <div className="h-48 bg-slate-800/50 border border-slate-700 rounded-xl p-4 flex flex-col shadow-lg">
             <h3 className="text-md font-semibold mb-2 flex items-center gap-2 text-slate-300 border-b border-slate-700 pb-2">
               <Terminal size={16} /> Console
