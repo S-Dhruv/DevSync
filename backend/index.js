@@ -20,7 +20,7 @@ const app = express();
 const server = createServer(app);
 app.use(
   cors({
-    origin: "http://localhost:5173", // ✅ Explicit frontend origin
+    origin: "*", 
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
@@ -58,7 +58,6 @@ app.use("/", authRoutes);
 app.use("/", roomRoutes);
 app.use("/", quizRoutes);
 app.use("/", testRoutes);
-
 
 app.post("/getMessage", async (req, res) => {
   const { roomCode } = req.body;
