@@ -27,7 +27,7 @@ const VideoCall = () => {
       },
     ],
   };
-
+  // added to trigger redeployment
   useEffect(() => {
     socketRef.current = io(SERVER_URL, {
       transports: ["websocket"],
