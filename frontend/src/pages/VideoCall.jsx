@@ -18,7 +18,14 @@ const VideoCall = () => {
   const screenTrackRef = useRef(null);
 
   const iceConfig = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceServers: [
+      { urls: "stun:bn-turn2.xirsys.com" },
+      {
+        username: import.meta.env.VITE_username,
+        credential: import.meta.env.VITE_credentials,
+        urls: JSON.parse(import.meta.env.VITE_urls),
+      },
+    ],
   };
 
   useEffect(() => {
@@ -74,7 +81,7 @@ const VideoCall = () => {
       if (message.type === "offer") {
         console.log("📨 Received offer");
         await peerConnection.setRemoteDescription(
-          new RTCSessionDescription(message)
+          new RTCSessionDescription(message),
         );
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
@@ -87,7 +94,7 @@ const VideoCall = () => {
       } else if (message.type === "answer") {
         console.log("✅ Received answer");
         await peerConnection.setRemoteDescription(
-          new RTCSessionDescription(message)
+          new RTCSessionDescription(message),
         );
       } else if (message.candidate) {
         try {
