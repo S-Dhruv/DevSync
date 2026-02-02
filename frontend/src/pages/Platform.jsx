@@ -65,9 +65,9 @@ const Platform = () => {
   const [value, setValue] = useState(
     "// Please select the language before starting",
   );
-  const [output, setOutput] = useState(null);
+  const [output, setOutput] = useState("Output will appear here...");
   const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("");
+  const [language, setLanguage] = useState("java");
   const [questions, setQuestions] = useState(dummyQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [stdinValue, setStdinValue] = useState("");
@@ -98,7 +98,7 @@ const Platform = () => {
     setOutput("Running code...");
     try {
       // console.log(sourceCode);
-      // console.log(language);
+      console.log(language);
       const { run: result } = await executeCode(
         sourceCode,
         language,
@@ -204,7 +204,10 @@ const Platform = () => {
       setIsSubmitting(false);
     }
   };
-
+  const notifyChangeLanguage = (e)=>{
+    setLanguage(e.target.value);
+    toast.success(`Language set to ${e.target.value}`)
+  }
   return (
     <div className="bg-slate-900 text-white min-h-screen font-sans">
       <ToastContainer theme="dark" position="top-right" />
@@ -243,7 +246,6 @@ const Platform = () => {
               <h3 className="text-xl font-semibold text-white">
                 {currentQuestion.questionName}
               </h3>
-              <button onClick={handleSubmit}>Submit</button>
               <div className="mt-4">
                 <h4 className="font-semibold text-slate-300 mb-2">
                   Test Cases:
@@ -309,7 +311,7 @@ const Platform = () => {
                 />
                 <select
                   value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
+                  onChange={notifyChangeLanguage}
                   className="bg-slate-700 text-white pl-9 pr-3 py-2 text-sm rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
                 >
                   <option value="java">Java</option>
@@ -327,6 +329,16 @@ const Platform = () => {
                 <RotateCcw size={16} />
               </button>
             </div>
+            <button
+              onClick={handleSubmit}
+              className="px-6 py-3 rounded-lg font-semibold text-white 
+            bg-indigo-600 hover:bg-indigo-700 
+              active:scale-95 transition-all duration-150
+              shadow-lg hover:shadow-indigo-500/40"
+            >
+            Submit
+            </button>
+
             <button
               onClick={runCode}
               disabled={isLoading}
@@ -397,8 +409,8 @@ const Platform = () => {
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center flex-grow text-slate-400 font-mono">
-                Output will appear here...
+              <div className="text-slate-400 font-mono">
+                {output}
               </div>
             )}
           </div>

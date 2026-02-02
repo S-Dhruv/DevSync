@@ -51,7 +51,7 @@ export const executeCode = async (sourceCode, language, stdin) => {
       version: getVersion(language),
       files: [
         {
-          name: getFileName(language), // ✅ REQUIRED
+          name: getFileName(language), 
           content: sourceCode,
         },
       ],
