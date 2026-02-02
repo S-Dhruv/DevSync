@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function TestDashboard() {
   const nav = useNavigate();
-  const BASE = `http://localhost:5173`;
+  const BASE = `https://codingassistant.onrender.com`;
   const [testLinks, setTestLinks] = useState([]);
   const [roomCode, setRoomCode] = useState(
     localStorage.getItem("roomCode") || "",

@@ -17,6 +17,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import BuildIcon from '@mui/icons-material/Build';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +46,7 @@ const Sidebar = () => {
     { name: "Chat Room", link: "/forums", icon: <ForumIcon /> },
     { name: "Video Call", link: "/videoCall", icon: <VideoChatRoundedIcon /> },
     { name: "Test Dashboard", link: "/testdashboard", icon: <DashboardIcon /> },
+    { name: "Test Setup", link: "/sandbox", icon: <BuildIcon /> }
   ];
 
   const hideNavbarPaths = ["/", "/signup", "/login"];

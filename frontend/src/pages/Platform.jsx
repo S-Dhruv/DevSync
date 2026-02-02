@@ -314,7 +314,7 @@ const Platform = () => {
                 >
                   <option value="java">Java</option>
                   <option value="javascript">JavaScript</option>
-                  <option value="python3">Python</option>
+                  <option value="python">Python</option>
                   <option value="cpp">C++</option>
                   <option value="c">C</option>
                 </select>
