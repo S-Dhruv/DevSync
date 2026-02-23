@@ -17,17 +17,27 @@ import JSZip from "jszip";
 import { executeCode } from "/src/assets/api.js";
 import axios from "axios";
 const Platform = () => {
-  const zip = new JSZip();
-  const nav = useNavigate();
   const { testId } = useParams();
   const [roomCode, setRoomCode] = useState(
     localStorage.getItem("roomCode") || "",
   );
   const [dummyQuestions, setDummyQuestions] = useState([]);
-  const [onQuestion, setOnQuestion] = useState("");
-  const [testCases, setTestCases] = useState([]);
-  const [expectedOutputs, setExpectedOutputs] = useState([]);
-  const [code, setCode] = useState("");
+  const editorRef = useRef(null);
+  const containerRef = useRef(null);
+  const resizerRef = useRef(null);
+  const [value, setValue] = useState(
+      "// Please select the language before starting",
+  );
+  const [output, setOutput] = useState("Output will appear here...");
+  const [isLoading, setIsLoading] = useState(false);
+  const [language, setLanguage] = useState("java");
+  const [questions, setQuestions] = useState(dummyQuestions);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [stdinValue, setStdinValue] = useState("");
+  const [leftPanelWidth, setLeftPanelWidth] = useState(35);
+  const [terminalOutput, setTerminalOutput] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false); // new state
+
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -59,60 +69,52 @@ const Platform = () => {
 
     fetchQuestions();
   }, [roomCode, testId]);
-  const editorRef = useRef(null);
-  const containerRef = useRef(null);
-  const resizerRef = useRef(null);
-  const [value, setValue] = useState(
-    "// Please select the language before starting",
-  );
-  const [output, setOutput] = useState("Output will appear here...");
-  const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState("java");
-  const [questions, setQuestions] = useState(dummyQuestions);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [stdinValue, setStdinValue] = useState("");
-  const [leftPanelWidth, setLeftPanelWidth] = useState(35);
-  const [terminalOutput, setTerminalOutput] = useState([]);
+
   useEffect(() => {
     if (questions.length > 0) {
       console.log(questions);
       setValue(
-        `// Start coding for ${questions[currentQuestionIndex].questionName}`,
+        `// Start coding in ${language}`,
       );
       setStdinValue(""); // Clear input on question change
       setOutput(null);
     }
   }, [currentQuestionIndex, questions]);
 
+  useEffect(() => {
+    setQuestions(dummyQuestions);
+  }, [dummyQuestions]);
+
   const onMount = (editor) => {
     editorRef.current = editor;
     editor.focus();
   };
-  const runCode = async () => {
-    const sourceCode = editorRef.current?.getValue().trim();
-    if (!sourceCode) {
-      toast.warn("Code editor is empty!");
-      return;
-    }
-    setIsLoading(true);
-    setOutput("Running code...");
-    try {
-      // console.log(sourceCode);
-      console.log(language);
-      const { run: result } = await executeCode(
-        sourceCode,
-        language,
-        stdinValue,
-      );
 
-      setOutput(result?.output || "No output returned.");
-    } catch (error) {
-      console.error("Code execution error:", error);
-      setOutput(`Execution failed. Please try again. ${error}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const runCode = async () => {
+  //   const sourceCode = editorRef.current?.getValue().trim();
+  //   if (!sourceCode) {
+  //     toast.warn("Code editor is empty!");
+  //     return;
+  //   }
+  //   setIsLoading(true);
+  //   setOutput("Running code...");
+  //   try {
+  //     // console.log(sourceCode);
+  //     console.log(language);
+  //     const { run: result } = await executeCode(
+  //       sourceCode,
+  //       language,
+  //       stdinValue,
+  //     );
+  //
+  //     setOutput(result?.output || "No output returned.");
+  //   } catch (error) {
+  //     console.error("Code execution error:", error);
+  //     setOutput(`Execution failed. Please try again. ${error}`);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const resetCode = () => {
     const resetValue = `// Code reset at ${new Date().toLocaleTimeString()} for question ${currentQuestionIndex + 1}`;
@@ -130,13 +132,13 @@ const Platform = () => {
     );
 
   const currentQuestion = questions[currentQuestionIndex];
+
   const stopResizing = useCallback(() => {
     document.removeEventListener("mousemove", resizePanel);
     document.removeEventListener("mouseup", stopResizing);
   }, []);
-  useEffect(() => {
-    setQuestions(dummyQuestions);
-  }, [dummyQuestions]);
+
+
   const resizePanel = useCallback((e) => {
     if (!containerRef.current) return;
 
@@ -158,36 +160,35 @@ const Platform = () => {
     },
     [resizePanel, stopResizing],
   );
-  const [isSubmitting, setIsSubmitting] = useState(false); // new state
+
   const handleSubmit = async () => {
     const formData = new FormData();
     setIsSubmitting(true);
     setTerminalOutput([]);
+    setIsLoading(true);
     formData.append("language", language);
     formData.append("question", JSON.stringify(currentQuestion.questionName));
+
     let index = 1;
     for (const f of currentQuestion.testCases) {
       const file = new File([f], `input${index}.in`, { type: "text/plain" });
       formData.append("inputs", file);
       index++;
     }
-    // console.log(formData);
+
     const code = editorRef.current?.getValue().trim();
     const codeFile = new File([code], `main.${language}`, {
       type: "text/plain",
     });
+
     formData.append("code", codeFile);
-    // console.log(codeFile);
+
     const validations = JSON.stringify(currentQuestion.output, null, 2);
-    // console.log(validations);
     const validationFile = new File([validations], "validations.json", {
       type: "application/json",
     });
-    formData.append("validations", validationFile);
 
-    // for (const [key, value] of formData.entries()) {
-    //   console.log(`${key}:`, value);
-    // }
+    formData.append("validations", validationFile);
 
     try {
       const response = await axios.post(
@@ -196,18 +197,20 @@ const Platform = () => {
         { headers: { "Content-Type": "multipart/form-data" } },
       );
       toast.success("Code submitted successfully!");
-      // console.log(response.data.finalOutput);
       setTerminalOutput(response.data.finalOutput || ["No output received."]);
     } catch (err) {
       toast.error(err);
     } finally {
       setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
+
   const notifyChangeLanguage = (e)=>{
     setLanguage(e.target.value);
     toast.success(`Language set to ${e.target.value}`)
   }
+
   return (
     <div className="bg-slate-900 text-white min-h-screen font-sans">
       <ToastContainer theme="dark" position="top-right" />
@@ -316,7 +319,7 @@ const Platform = () => {
                 >
                   <option value="java">Java</option>
                   <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
+                  <option value="python3">Python</option>
                   <option value="cpp">C++</option>
                   <option value="c">C</option>
                 </select>
@@ -340,7 +343,7 @@ const Platform = () => {
             </button>
 
             <button
-              onClick={runCode}
+              onClick={handleSubmit}
               disabled={isLoading}
               className="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2 font-semibold text-sm disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-wait transform hover:scale-105"
             >
