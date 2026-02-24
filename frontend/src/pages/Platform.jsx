@@ -206,54 +206,69 @@ const Platform = () => {
     }
   };
   const handleRun = async () => {
+    const code = editorRef.current?.getValue().trim();
+
+    if (!code) {
+      toast.warn("Code editor is empty!");
+      return;
+    }
+
+    if (!stdinValue || stdinValue.trim() === "") {
+      toast.warn("Please provide input before running the code.");
+      return;
+    }
+
     const formData = new FormData();
     setIsLoading(true);
     setOutput("Running...");
     setTerminalOutput([]);
-
+    formData.append("mode", "run");
     formData.append("language", language);
 
-    // attach stdin if present (as a single input file)
-    if (stdinValue && stdinValue.trim() !== "") {
-      const stdinFile = new File([stdinValue], "stdin.txt", {
-        type: "text/plain",
-      });
-      formData.append("inputs", stdinFile);
-    }
+    // MUST be .in
+    const stdinFile = new File([stdinValue], "input1.in");
+    formData.append("inputs", stdinFile);
 
-    const code = editorRef.current?.getValue().trim();
-    if (!code) {
-      toast.warn("Code editor is empty!");
-      setIsLoading(false);
-      return;
-    }
+    let filename = "hello.py";
+    if (language === "cpp") filename = "main.cpp";
+    if (language === "c") filename = "main.c";
+    if (language === "java") filename = "Main.java";
+    if (language === "node") filename = "main.js";
 
-    const codeFile = new File([code], `main.${language}`, {
+    const codeFile = new File([code], filename, {
       type: "text/plain",
     });
-
     formData.append("code", codeFile);
+
+    // MUST match number of inputs (1)
+    const validationFile = new File(
+        [JSON.stringify(["RUN_MODE"])],
+        "validations.json",
+        { type: "application/json" }
+    );
+    formData.append("validations", validationFile);
 
     try {
       const response = await axios.post(
-          "https://code-exec-rwoe.onrender.com/run", // <-- new route
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } },
+          "https://code-exec-rwoe.onrender.com/submit",
+          formData
       );
 
-      const { stdout, stderr, status, compile_output } = response.data;
+      const { stdout, stderr, compile_output } = response.data;
 
       let consoleLines = [];
+      if (compile_output) consoleLines.push(...compile_output.split("\n"));
+      if (stdout) consoleLines.push(...stdout.split("\n"));
+      if (stderr) consoleLines.push(...stderr.split("\n"));
 
-      if (compile_output) consoleLines.push(compile_output);
-      if (stdout) consoleLines.push(stdout);
-      if (stderr) consoleLines.push(stderr);
-      if (!stdout && !stderr) consoleLines.push("Program finished with no output.");
+      consoleLines = consoleLines.filter(l => l.trim() !== "");
+      if (consoleLines.length === 0) consoleLines.push("Program finished.");
 
       setTerminalOutput(consoleLines);
-      setOutput(status || "Execution Finished");
+      setOutput("Execution Finished");
+
     } catch (err) {
-      console.error("Run error:", err);
+      console.error(err);
       toast.error("Execution failed");
       setTerminalOutput(["Execution failed"]);
     } finally {
@@ -373,7 +388,7 @@ const Platform = () => {
                   className="bg-slate-700 text-white pl-9 pr-3 py-2 text-sm rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
                 >
                   <option value="java">Java</option>
-                  <option value="javascript">JavaScript</option>
+                  <option value="node">JavaScript</option>
                   <option value="python3">Python</option>
                   <option value="cpp">C++</option>
                   <option value="c">C</option>

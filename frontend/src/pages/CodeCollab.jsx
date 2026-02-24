@@ -16,6 +16,7 @@ import {
 import { io } from "socket.io-client";
 import { executeCode } from "../assets/api";
 import { jwtDecode } from "jwt-decode";
+import axios from "axios";
 
 // const socket = io.connect("https://codingassistant.onrender.com/");
 const socket = io.connect("https://codingassistant.onrender.com/");
@@ -132,29 +133,63 @@ const CodeCollab = () => {
 
   const runCode = async () => {
     const sourceCode = editorRef.current?.getValue().trim();
+
     if (!sourceCode) {
       toast.warn("Code editor is empty!");
       return;
     }
+
+    if (!stdinValue || stdinValue.trim() === "") {
+      toast.warn("Please provide input before running.");
+      return;
+    }
+
     setIsLoading(true);
     setOutput("Running code...");
+
     try {
-      console.log(sourceCode);
-      console.log(language);
-      const { run: result } = await executeCode(
-        sourceCode,
-        language,
-        stdinValue,
+      const formData = new FormData();
+
+      formData.append("mode", "run");
+      formData.append("language", language);
+
+      const inputFile = new File([stdinValue], "input1.in", {
+        type: "text/plain",
+      });
+      formData.append("inputs", inputFile);
+
+      let filename = "hello.py";
+      if (language === "cpp") filename = "main.cpp";
+      if (language === "c") filename = "main.c";
+      if (language === "java") filename = "Main.java";
+      if (language === "javascript") filename = "main.js";
+
+      const codeFile = new File([sourceCode], filename, {
+        type: "text/plain",
+      });
+      formData.append("code", codeFile);
+
+      const validationFile = new File([JSON.stringify(["RUN_MODE"])], "validations.json", { type: "application/json" }
+      );
+      formData.append("validations", validationFile);
+
+      const response = await axios.post("https://code-exec-rwoe.onrender.com/submit", formData
       );
 
-      setOutput(result?.output || "No output returned.");
-    } catch (error) {
-      console.error("Code execution error:", error);
-      setOutput(`Execution failed. Please try again. ${error}`);
+      const stdout = response.data.stdout || response.data.finalOutput || "";
+
+      setOutput(Array.isArray(stdout) ? stdout.join("\n") : stdout || "Program finished."
+      );
+
+    } catch (err) {
+      console.error(err);
+      setOutput("Execution failed.");
+      toast.error("Execution failed");
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const resetCode = () => {
     const resetValue = `// Code reset at ${new Date().toLocaleTimeString()}`;
@@ -259,8 +294,8 @@ const CodeCollab = () => {
                   className="bg-slate-700 text-white pl-9 pr-3 py-2 text-sm rounded-md border border-slate-600 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
                 >
                   <option value="java">Java</option>
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
+                  <option value="node">JavaScript</option>
+                  <option value="python3">Python</option>
                   <option value="cpp">C++</option>
                   <option value="c">C</option>
                 </select>
