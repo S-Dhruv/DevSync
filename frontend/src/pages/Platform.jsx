@@ -205,6 +205,61 @@ const Platform = () => {
       setIsLoading(false);
     }
   };
+  const handleRun = async () => {
+    const formData = new FormData();
+    setIsLoading(true);
+    setOutput("Running...");
+    setTerminalOutput([]);
+
+    formData.append("language", language);
+
+    // attach stdin if present (as a single input file)
+    if (stdinValue && stdinValue.trim() !== "") {
+      const stdinFile = new File([stdinValue], "stdin.txt", {
+        type: "text/plain",
+      });
+      formData.append("inputs", stdinFile);
+    }
+
+    const code = editorRef.current?.getValue().trim();
+    if (!code) {
+      toast.warn("Code editor is empty!");
+      setIsLoading(false);
+      return;
+    }
+
+    const codeFile = new File([code], `main.${language}`, {
+      type: "text/plain",
+    });
+
+    formData.append("code", codeFile);
+
+    try {
+      const response = await axios.post(
+          "https://code-exec-rwoe.onrender.com/run", // <-- new route
+          formData,
+          { headers: { "Content-Type": "multipart/form-data" } },
+      );
+
+      const { stdout, stderr, status, compile_output } = response.data;
+
+      let consoleLines = [];
+
+      if (compile_output) consoleLines.push(compile_output);
+      if (stdout) consoleLines.push(stdout);
+      if (stderr) consoleLines.push(stderr);
+      if (!stdout && !stderr) consoleLines.push("Program finished with no output.");
+
+      setTerminalOutput(consoleLines);
+      setOutput(status || "Execution Finished");
+    } catch (err) {
+      console.error("Run error:", err);
+      toast.error("Execution failed");
+      setTerminalOutput(["Execution failed"]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const notifyChangeLanguage = (e)=>{
     setLanguage(e.target.value);
@@ -343,7 +398,7 @@ const Platform = () => {
             </button>
 
             <button
-              onClick={handleSubmit}
+              onClick={handleRun}
               disabled={isLoading}
               className="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all flex items-center gap-2 font-semibold text-sm disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-wait transform hover:scale-105"
             >
